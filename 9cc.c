@@ -13,7 +13,7 @@ typedef enum {
   TK_EOF,       // 入力の終わりを表すトークン
 } TokenKind;
 
-//
+// リスト構造のため、名前を先に宣言している
 typedef struct Token Token;
 
 struct Token {
@@ -24,21 +24,30 @@ struct Token {
 };
 
 
+// 入力文字列
+char* user_input;
+
 // 現在着目しているトークン
 Token *token;
 
 
-//
-void error(char *fmt, ...) {
+// エラーメッセージを出力し、プログラムを終了する
+void error_at(char *loc, char *fmt, ...) {
   va_list ap;
   va_start(ap, fmt);
+
+  int pos = loc - user_input;
+  fprintf(stderr, "%s\n", user_input);
+  fprintf(stderr, "%*s", pos, "");
+  fprintf(stderr, "^ ");
   vfprintf(stderr, fmt, ap);
   fprintf(stderr, "\n");
   exit(1);
 }
 
 
-//
+// 現在のトークンが期待する記号だった場合に、次のトークンへ移動する
+// 結果を返す
 bool consume(char op) {
   if (token->kind != TK_RESERVED || token->str[0] != op)
     return false;
@@ -48,29 +57,33 @@ bool consume(char op) {
 }
 
 
-//
+// 現在のトークンが期待する記号だった場合に、次のトークンへ移動する 
 void expect(char op) {
   if (token->kind != TK_RESERVED || token->str[0] != op) 
-    error("'%c'ではありません", op);
+    error_at(token->str, "'%c'ではありません", op);
 
   token = token->next;
 }
 
 
+// 現在のトークンが数字だった場合に、次のトークンへ移動する
 int expect_number() {
   if (token->kind != TK_NUM) 
-    error("'数ではありません");
+    error_at(token->str, "'数ではありません");
+
   int val = token->val;
   token = token->next;
   return val;
 }
 
 
+// 現在のトークンがEOFかどうか
 bool at_eof() {
   return token->kind == TK_EOF;
 }
 
-//
+
+// 新しいトークンを確保し、cur->nextにセットする
 Token *new_token(TokenKind kind, Token *cur, char *str) {
   Token *tok = calloc(1, sizeof(Token));
 
@@ -81,7 +94,7 @@ Token *new_token(TokenKind kind, Token *cur, char *str) {
 }
 
 
-//
+// トークンに分割する
 Token *tokenize(char *p) {
   Token head;
   head.next = NULL;
@@ -105,7 +118,7 @@ Token *tokenize(char *p) {
       continue;
     }
 
-    error("トークナイズできません");
+    error_at(p, "トークナイズできません");
   }
 
   new_token(TK_EOF, cur, p);
@@ -121,6 +134,7 @@ int main(int argc, char **argv) {
   }
 
   //
+  user_input = argv[1];
   token = tokenize(argv[1]);
 
   //
