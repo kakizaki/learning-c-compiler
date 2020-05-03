@@ -6,6 +6,11 @@
 #include <string.h>
 
 
+// 入力文字列
+char* user_input;
+
+
+// --- tokenizer ---
 // TOKEN
 typedef enum {
   TK_RESERVED,  // 記号
@@ -23,13 +28,8 @@ struct Token {
   char *str;       // トークン文字列
 };
 
-
-// 入力文字列
-char* user_input;
-
 // 現在着目しているトークン
 Token *token;
-
 
 // エラーメッセージを出力し、プログラムを終了する
 void error_at(char *loc, char *fmt, ...) {
@@ -45,7 +45,6 @@ void error_at(char *loc, char *fmt, ...) {
   exit(1);
 }
 
-
 // 現在のトークンが期待する記号だった場合に、次のトークンへ移動する
 // 結果を返す
 bool consume(char op) {
@@ -56,7 +55,6 @@ bool consume(char op) {
   return true;
 }
 
-
 // 現在のトークンが期待する記号だった場合に、次のトークンへ移動する 
 void expect(char op) {
   if (token->kind != TK_RESERVED || token->str[0] != op) 
@@ -64,7 +62,6 @@ void expect(char op) {
 
   token = token->next;
 }
-
 
 // 現在のトークンが数字だった場合に、次のトークンへ移動する
 int expect_number() {
@@ -76,12 +73,10 @@ int expect_number() {
   return val;
 }
 
-
 // 現在のトークンがEOFかどうか
 bool at_eof() {
   return token->kind == TK_EOF;
 }
-
 
 // 新しいトークンを確保し、cur->nextにセットする
 Token *new_token(TokenKind kind, Token *cur, char *str) {
@@ -92,7 +87,6 @@ Token *new_token(TokenKind kind, Token *cur, char *str) {
   cur->next = tok;
   return tok;
 }
-
 
 // トークンに分割する
 Token *tokenize(char *p) {
@@ -106,7 +100,13 @@ Token *tokenize(char *p) {
       continue;
     }
 
-    if (*p == '+' || *p == '-') {
+    if (*p == '+' 
+    || *p == '-' 
+    || *p == '*' 
+    || *p == '/'
+    || *p == '('
+    || *p == ')'
+    ) {
       cur = new_token(TK_RESERVED, cur, p);
       p++;
       continue;
@@ -126,6 +126,122 @@ Token *tokenize(char *p) {
 }
 
 
+// --- 抽象構文木 ---
+// 抽象構文木のノードの種類
+typedef enum {
+  ND_ADD, // +
+  ND_SUB, // -
+  ND_MUL, // *
+  ND_DIV, // /
+  ND_NUM, // 整数
+} NodeKind;
+
+typedef struct Node Node;
+
+// 抽象構文木のノードの型
+struct Node {
+  NodeKind kind; // ノードの型
+  Node *lhs; // 左辺
+  Node *rhs; // 右辺
+  int val; // kind が ND_NUM の場合のみ使う
+};
+
+Node *expr();
+Node *mul();
+Node *primary();
+
+
+Node *new_node(NodeKind kind) {
+  Node *node = calloc(1, sizeof(Node));
+  node->kind = kind;
+  return node;
+}
+ 
+Node *new_node_binary(NodeKind kind, Node *lhs, Node *rhs) {
+  Node *node = new_node(kind);
+  node->lhs = lhs;
+  node->rhs = rhs;
+  return node;
+}
+
+Node *new_node_num(int val) {
+  Node *node = new_node(ND_NUM);
+  node->val = val;
+  return node;
+}
+
+// expr = mul ('+' mul | '-' mul)*
+Node *expr() {
+  Node *node = mul();
+
+  for (;;) {
+    if (consume('+')) 
+      node = new_node_binary(ND_ADD, node, mul());
+    else if (consume('-'))
+      node = new_node_binary(ND_SUB, node, mul());
+    else
+      return node; 
+  }
+}
+
+// mul = primary ('*' primary | '/' primary)*
+Node *mul() {
+  Node *node = primary();
+
+  for (;;) {
+    if (consume('*'))
+      node = new_node_binary(ND_MUL, node, primary());
+    else if (consume('/'))
+      node = new_node_binary(ND_DIV, node, primary());
+    else
+      return node;
+  }
+}
+
+// primary = num | '(' expr ')'
+Node *primary() {
+  if (consume('(')) {
+    Node *node = expr();
+    expect(')');
+    return node;
+  }
+  return new_node_num(expect_number());
+}
+
+
+// --- generator ---
+void gen(Node *node) {
+  if (node->kind == ND_NUM) {
+    printf("  push %d\n", node->val);
+    return;
+  }
+
+  gen(node->lhs);
+  gen(node->rhs);
+  printf("  pop rdi\n");
+  printf("  pop rax\n");
+
+  switch (node->kind) {
+  case ND_ADD:
+    printf("  add rax, rdi\n");
+    break;
+  case ND_SUB:
+    printf("  sub rax, rdi\n");
+    break;
+  case ND_MUL:
+    printf("  imul rax, rdi\n");
+    break;
+  case ND_DIV:
+    printf("  cqo\n");
+    printf("  idiv rdi\n");
+    break;
+  }
+
+  printf("  push rax\n");
+}
+
+
+// --- main ---
 //
 int main(int argc, char **argv) {
   if (argc != 2) {
@@ -136,6 +252,7 @@ int main(int argc, char **argv) {
   //
   user_input = argv[1];
   token = tokenize(argv[1]);
+  Node *node = expr();
 
   //
   printf(".intel_syntax noprefix\n");
@@ -143,19 +260,10 @@ int main(int argc, char **argv) {
   printf("main:\n");
 
   //
-  printf("  mov rax, %d\n", expect_number());
+  gen(node);
 
-  //
-  while (at_eof() == false) {
-    if (consume('+')) {
-      printf("  add rax, %d\n", expect_number());
-      continue;
-    }
-
-    expect('-');
-    printf("  sub rax, %d\n", expect_number());
-  }
-
+  // 
+  printf("  pop rax\n");
   printf("  ret\n");
   return 0;
 }
