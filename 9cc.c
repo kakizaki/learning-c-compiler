@@ -146,9 +146,11 @@ struct Node {
   int val; // kind が ND_NUM の場合のみ使う
 };
 
+
 Node *expr();
 Node *mul();
 Node *primary();
+Node *unary();
 
 
 Node *new_node(NodeKind kind) {
@@ -184,15 +186,15 @@ Node *expr() {
   }
 }
 
-// mul = primary ('*' primary | '/' primary)*
+// mul = unary ('*' unary | '/' unary)*
 Node *mul() {
-  Node *node = primary();
+  Node *node = unary();
 
   for (;;) {
     if (consume('*'))
-      node = new_node_binary(ND_MUL, node, primary());
+      node = new_node_binary(ND_MUL, node, unary());
     else if (consume('/'))
-      node = new_node_binary(ND_DIV, node, primary());
+      node = new_node_binary(ND_DIV, node, unary());
     else
       return node;
   }
@@ -206,6 +208,17 @@ Node *primary() {
     return node;
   }
   return new_node_num(expect_number());
+}
+
+// unary = ('+' | '-')? primary
+Node *unary() {
+  if (consume('+')) {
+    return primary();
+  }
+  if (consume('-')) {
+    return new_node_binary(ND_SUB, new_node_num(0), primary());
+  }
+  return primary();
 }
 
 
