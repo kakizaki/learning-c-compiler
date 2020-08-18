@@ -2,6 +2,15 @@
 #include "9cc.h"
 
 
+void error(char *fmt, ...) {
+  va_list ap;
+  va_start(ap, fmt);
+  vfprintf(stderr, fmt, ap);
+  fprintf(stderr, "\n");
+  exit(1);
+}
+
+
 // エラーメッセージを出力し、プログラムを終了する
 void error_at(char *loc, char *fmt, ...) {
   va_list ap;
@@ -59,8 +68,21 @@ bool consume(char *op) {
 }
 
 
+// 現在のトークンが TK_IDENT だった場合に、次のトークンへ移動する
+// TK_IDENT だった場合はトークンを返す
+// TK_IDENT でない場合は NULL を返す
+Token *consume_ident() {
+  if (token->kind != TK_IDENT) {
+    return NULL;
+  }
+  Token* ident = token;
+  token = token->next;
+  return ident;
+}
+
+
 // 現在のトークンがEOFかどうか
-static bool at_eof() {
+bool at_eof() {
   return token->kind == TK_EOF;
 }
 
@@ -110,8 +132,16 @@ Token *tokenize(char *p) {
     || *p == '/'
     || *p == '('
     || *p == ')'
+    || *p == ';'
+    || *p == '='
     ) {
       cur = new_token(TK_RESERVED, cur, p, 1);
+      p++;
+      continue;
+    }
+
+    if ('a' <= *p && *p <= 'z') {
+      cur = new_token(TK_IDENT, cur, p, 1);
       p++;
       continue;
     }

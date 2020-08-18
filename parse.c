@@ -1,12 +1,7 @@
 #include "9cc.h"
 
+Node *code[100];
 
-static Node *equality();
-static Node *relational();
-static Node *add();
-static Node *mul();
-static Node *unary();
-static Node *primary();
 
 
 static Node *new_node(NodeKind kind) {
@@ -31,14 +26,46 @@ static Node *new_node_num(int val) {
 }
 
 
-// expr = equality
-Node *expr() {
-  return equality();
+// program = statement*
+void program() {
+  int i = 0;
+  while (!at_eof()) {
+    code[i] = statement();
+    ++i;
+  }
+  code[i] = NULL;
+}
+
+
+// statement = expression ";"
+Node *statement() {
+  Node *node = expression();
+  expect(";");
+  return node;
+}
+
+
+// expression = assign
+Node *expression() {
+  return assign();
+}
+
+
+// assign = equality ("=" assign)?
+Node *assign() {
+  Node *node = equality();
+
+  if (consume("=")) {
+    node = new_node_binary(ND_ASSIGN, node, assign());
+    return node;
+  }
+
+  return node;
 }
 
 
 // equality = relational ("==" relational | "!=" relational)*
-static Node *equality() {
+Node *equality() {
   Node *node = relational();
 
   for (;;) {
@@ -56,7 +83,7 @@ static Node *equality() {
 
 
 // relational = add ("<" add | "<=" add | ">" add | ">=" add)*
-static Node *relational() {
+Node *relational() {
   Node *node = add();
 
   for (;;) {
@@ -80,7 +107,7 @@ static Node *relational() {
 
 
 // add = mul ('+' mul | '-' mul)*
-static Node *add() {
+Node *add() {
   Node *node = mul();
 
   for (;;) {
@@ -95,7 +122,7 @@ static Node *add() {
 
 
 // mul = unary ('*' unary | '/' unary)*
-static Node *mul() {
+Node *mul() {
   Node *node = unary();
 
   for (;;) {
@@ -109,19 +136,28 @@ static Node *mul() {
 }
 
 
-// primary = num | '(' expr ')'
-static Node *primary() {
+// primary = num | indent | '(' expression ')'
+Node *primary() {
   if (consume("(")) {
-    Node *node = expr();
+    Node *node = expression();
     expect(")");
     return node;
   }
+
+  Token *ident = consume_ident();
+  if (ident) {
+    Node *node = calloc(1, sizeof(Node));
+    node->kind = ND_LVAR;
+    node->offset = (ident->str[0] - 'a' + 1) * 8;
+    return node;
+  }
+
   return new_node_num(expect_number());
 }
 
 
 // unary = ('+' | '-')? primary
-static Node *unary() {
+Node *unary() {
   if (consume("+")) {
     return primary();
   }
