@@ -3,7 +3,6 @@
 Node *code[100];
 
 
-
 static Node *new_node(NodeKind kind) {
   Node *node = calloc(1, sizeof(Node));
   node->kind = kind;
@@ -148,7 +147,26 @@ Node *primary() {
   if (ident) {
     Node *node = calloc(1, sizeof(Node));
     node->kind = ND_LVAR;
-    node->offset = (ident->str[0] - 'a' + 1) * 8;
+
+    LVar *lvar = find_lvar(ident);
+    if (lvar) {
+      node->offset = lvar->offset;
+    }
+    else {
+      lvar = calloc(1, sizeof(LVar));
+      lvar->name = ident->str;
+      lvar->len = ident->len;
+
+      // 新しい変数をリストの先頭にする
+      if (locals) {
+        node->offset = locals->offset + 8;
+      } else {
+        node->offset = 8;
+      }
+      lvar->offset = node->offset;
+      lvar->next = locals;
+      locals = lvar;
+    }
     return node;
   }
 

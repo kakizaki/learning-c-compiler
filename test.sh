@@ -61,5 +61,13 @@ try 3 'a=1+2*3-8/2;'
 try 3 'a=1;b=2;a+b;'
 try 0 'a=1;b=2;c=4/b-a*2;'
 
+# 変数 2
+try 3 'abc=1+2;'
+try 3 'abc=1+2*3-8/2;'
+
+try 3 'abc=1;bzz=2;abc+bzz;'
+try 0 'abc=1;bzz=2;ab=4/bzz-abc*2;'
+
+
 
 echo OK

@@ -27,6 +27,24 @@ struct Token {
   int len;         // トークンの長さ
 };
 
+
+// ローカル変数の型
+typedef struct LVar LVar;
+
+struct LVar {
+  LVar *next;     // 次の変数、または、NULL
+  char *name;     // 変数の名前
+  int len;        // 名前の長さ
+  int offset;     // RBPからのオフセット
+};
+
+// ローカル変数
+LVar *locals;
+
+LVar *find_lvar(Token *tok);
+
+
+
 void error(char *fmt, ...);
 void error_at(char *loc, char *fmt, ...);
 void expect(char *op);

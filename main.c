@@ -7,6 +7,17 @@ char* user_input;
 // 現在着目しているトークン
 Token *token;
 
+//
+LVar *locals = NULL;
+
+LVar *find_lvar(Token *tok) {
+  for (LVar *var = locals; var; var = var->next) {
+    if (var->len == tok->len && !memcmp(tok->str, var->name, var->len)) {
+      return var;
+    }
+  }
+  return NULL;
+}
 
 
 // --- main ---

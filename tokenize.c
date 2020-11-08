@@ -54,6 +54,16 @@ static bool startWith(char *p, char *q) {
 }
 
 
+static int countWordLength(char *p) {
+  int len = 0;
+  while ('a' <= *p && *p <= 'z') {
+    len++;
+    p++;
+  }
+  return len;
+}
+
+
 // 現在のトークンが期待する記号だった場合に、次のトークンへ移動する
 // 結果を返す
 bool consume(char *op) {
@@ -104,6 +114,7 @@ Token *tokenize(char *p) {
   Token head;
   head.next = NULL;
   Token *cur = &head;
+  int length = 0;
 
   while (*p) {
     if (isspace(*p)) {
@@ -140,9 +151,10 @@ Token *tokenize(char *p) {
       continue;
     }
 
-    if ('a' <= *p && *p <= 'z') {
-      cur = new_token(TK_IDENT, cur, p, 1);
-      p++;
+    length = countWordLength(p);
+    if (0 < length) {
+      cur = new_token(TK_IDENT, cur, p, length);
+      p += length;
       continue;
     }
 
