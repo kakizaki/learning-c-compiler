@@ -54,11 +54,22 @@ static bool startWith(char *p, char *q) {
 }
 
 
+static bool isVariableNameHead(char p) {
+  return 'a' <= p && p <= 'z' || 'A' <= p && p <= 'Z' || p == '_';
+}
+
+static bool isVariableName(char p) {
+  return isVariableNameHead(p) || '0' <= p && p <= '9';
+}
+
 static int countWordLength(char *p) {
   int len = 0;
-  while ('a' <= *p && *p <= 'z') {
-    len++;
-    p++;
+
+  if (isVariableNameHead(*p)) {
+    do {
+        len++;
+        p++;
+    } while (isVariableName(*p));
   }
   return len;
 }

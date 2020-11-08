@@ -68,6 +68,7 @@ try 3 'abc=1+2*3-8/2;'
 try 3 'abc=1;bzz=2;abc+bzz;'
 try 0 'abc=1;bzz=2;ab=4/bzz-abc*2;'
 
+try 3 '_a12=1;__b__3=2;_a12+__b__3;'
 
 
 echo OK
