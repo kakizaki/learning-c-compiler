@@ -81,6 +81,17 @@ static bool is_alnum(char c) {
   || (c == '_');
 }
 
+static bool is_reserved(const char* p, const char* word, int len) {
+  if (strncmp(p, word, len) != 0) {
+    return false;
+  }
+
+  if (is_alnum(p[len])) {
+    return false;
+  }
+
+  return true;
+}
 
 // 現在のトークンが期待する記号だった場合に、次のトークンへ移動する
 // 結果を返す
@@ -180,9 +191,24 @@ Token *tokenize(char *p) {
       continue;
     }
 
-    if (strncmp(p, "return", 6) == 0 && !is_alnum(p[6])) {
-      cur = new_token(TK_RETURN, cur, p, 6);
-      p += 6;
+    length = 6;
+    if (is_reserved(p, "return", length)) {
+      cur = new_token(TK_RETURN, cur, p, length);
+      p += length;
+      continue;
+    }
+
+    length = 2;
+    if (is_reserved(p, "if", length)) {
+      cur = new_token(TK_IF, cur, p, length);
+      p += length;
+      continue;
+    }
+
+    length = 4;
+    if (is_reserved(p, "else", length)) {
+      cur = new_token(TK_ELSE, cur, p, length);
+      p += length;
       continue;
     }
 

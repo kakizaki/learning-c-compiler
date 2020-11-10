@@ -36,11 +36,27 @@ void program() {
 }
 
 
-// statement = expression ";" | "return" expression ";"
+// statement = expression ";" 
+//          | "if" "(" expression ")" statement ("else" statement)?
+//          | "return" expression ";"
 Node *statement() {
   Node *node;
 
-  // node = expression();
+  if (consume_token(TK_IF)) {
+    node = new_node(ND_IF);
+    
+    expect("(");
+    node->cond = expression();
+    expect(")");
+    node->thenBlock = statement();
+
+    if (consume_token(TK_ELSE)) {
+      node->kind = ND_IF_ELSE;
+      node->elseBlock = statement();
+    }
+    return node;
+  }
+
   if (consume_token(TK_RETURN)) {
     node = new_node(ND_RETURN);
     node->lhs = expression();

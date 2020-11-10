@@ -78,8 +78,25 @@ try 3 'abc=1;bzz=2;return abc+bzz;'
 try 0 'abc=1;bzz=2;return ab=4/bzz-abc*2;'
 
 try 3 '_a12=1;__b__3=2;return _a12+__b__3;'
-
 try 2 'returnx=2; return returnx;'
+
+# if
+try 2 'if(1)return 2;return 3;'
+try 3 'if(0)return 2;return 3;'
+try 2 'a=0;if(a+1)return 2;return 3;'
+
+try 2 'if(1)if(1)return 2;return 3;'
+try 3 'if(1)if(0)return 2;return 3;'
+try 3 'if(0)if(1)return 2;return 3;'
+
+# if else
+try 2 'if(1)return 2;else return 3;'
+try 3 'if(0)return 2;else return 3;'
+try 2 'a=0;if(a+1)return 2;else return 3;'
+
+try 2 'if(1)if(1)return 2;else return 3;'
+try 3 'if(1)if(0)return 2;else return 3;'
+try 4 'if(0)if(1)return 2;else return 3;else return 4;'
 
 
 

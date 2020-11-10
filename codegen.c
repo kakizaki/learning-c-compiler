@@ -14,8 +14,18 @@ static void gen_lval(Node *node) {
 }
 
 
+int publishedLabelCount = 0;
+
+int publicLabelID() {
+  int i = publishedLabelCount;
+  publishedLabelCount++;
+  return i;
+}
+
 
 static void gen(Node *node) {
+  int labelID;
+
   switch (node->kind) {
 
   // 数値
@@ -55,6 +65,29 @@ static void gen(Node *node) {
     printf("  mov rsp, rbp\n");
     printf("  pop rbp\n");
     printf("  ret\n");
+    return;
+
+  case ND_IF:
+    labelID = publicLabelID();
+    gen(node->cond);
+    printf("  pop rax\n");
+    printf("  cmp rax, 0\n");
+    printf("  je  .Lend%d\n", labelID);
+    gen(node->thenBlock);
+    printf(".Lend%d:\n", labelID);
+    return;
+
+  case ND_IF_ELSE:
+    labelID = publicLabelID();
+    gen(node->cond);
+    printf("  pop rax\n");
+    printf("  cmp rax, 0\n");
+    printf("  je  .Lelse%d\n", labelID);
+    gen(node->thenBlock);
+    printf("  jmp .Lend%d\n",labelID);
+    printf(".Lelse%d:\n", labelID);
+    gen(node->elseBlock);
+    printf(".Lend%d:\n", labelID);
     return;
   }
 
