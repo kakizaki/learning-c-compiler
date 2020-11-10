@@ -70,5 +70,17 @@ try 0 'abc=1;bzz=2;ab=4/bzz-abc*2;'
 
 try 3 '_a12=1;__b__3=2;_a12+__b__3;'
 
+# return
+try 4 'abc=1+2;return 4;'
+try 3 'abc=1+2*3-8/2;return abc;'
+
+try 3 'abc=1;bzz=2;return abc+bzz;'
+try 0 'abc=1;bzz=2;return ab=4/bzz-abc*2;'
+
+try 3 '_a12=1;__b__3=2;return _a12+__b__3;'
+
+try 2 'returnx=2; return returnx;'
+
+
 
 echo OK

@@ -36,9 +36,18 @@ void program() {
 }
 
 
-// statement = expression ";"
+// statement = expression ";" | "return" expression ";"
 Node *statement() {
-  Node *node = expression();
+  Node *node;
+
+  // node = expression();
+  if (consume_token(TK_RETURN)) {
+    node = new_node(ND_RETURN);
+    node->lhs = expression();
+  } else {
+    node = expression();
+  }
+
   expect(";");
   return node;
 }
