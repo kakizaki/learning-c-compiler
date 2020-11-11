@@ -38,6 +38,7 @@ void program() {
 
 // statement = expression ";" 
 //          | "if" "(" expression ")" statement ("else" statement)?
+//          | "while" "(" expression ")" statement
 //          | "return" expression ";"
 Node *statement() {
   Node *node;
@@ -48,6 +49,7 @@ Node *statement() {
     expect("(");
     node->cond = expression();
     expect(")");
+
     node->thenBlock = statement();
 
     if (consume_token(TK_ELSE)) {
@@ -56,6 +58,18 @@ Node *statement() {
     }
     return node;
   }
+
+  if (consume_token(TK_WHILE)) {
+    node = new_node(ND_WHILE);
+
+    expect("(");
+    node->cond = expression();
+    expect(")");
+
+    node->thenBlock = statement();
+    return node;
+  }
+
 
   if (consume_token(TK_RETURN)) {
     node = new_node(ND_RETURN);

@@ -98,6 +98,10 @@ try 2 'if(1)if(1)return 2;else return 3;'
 try 3 'if(1)if(0)return 2;else return 3;'
 try 4 'if(0)if(1)return 2;else return 3;else return 4;'
 
+# while
+try 10 'a=1;while(a<10)a=a+1;return a;'
+try 9 'a=1;while(a+1<10)a=a+1;return a;'
+try 1 'a=1;while(a<0)a=a+1;return a;'
 
 
 echo OK
