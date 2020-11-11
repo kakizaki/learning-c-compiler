@@ -103,5 +103,8 @@ try 10 'a=1;while(a<10)a=a+1;return a;'
 try 9 'a=1;while(a+1<10)a=a+1;return a;'
 try 1 'a=1;while(a<0)a=a+1;return a;'
 
+# for
+try 45 'b=0;for(a=1;a<10;a=a+1)b=b+a;return b;'
+try 10 'a=0;for(;a<10;)a=a+1;return a;'
 
 echo OK

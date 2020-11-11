@@ -73,7 +73,7 @@ static void gen(Node *node) {
     printf("  pop rax\n");
     printf("  cmp rax, 0\n");
     printf("  je  .Lend%d\n", labelID);
-    gen(node->thenBlock);
+    gen(node->trueStatement);
     printf(".Lend%d:\n", labelID);
     return;
 
@@ -83,10 +83,10 @@ static void gen(Node *node) {
     printf("  pop rax\n");
     printf("  cmp rax, 0\n");
     printf("  je  .Lelse%d\n", labelID);
-    gen(node->thenBlock);
+    gen(node->trueStatement);
     printf("  jmp .Lend%d\n",labelID);
     printf(".Lelse%d:\n", labelID);
-    gen(node->elseBlock);
+    gen(node->falseStatement);
     printf(".Lend%d:\n", labelID);
     return;
 
@@ -97,7 +97,27 @@ static void gen(Node *node) {
     printf("  pop rax\n");
     printf("  cmp rax, 0\n");
     printf("  je .Lend%d\n", labelID);
-    gen(node->thenBlock);
+    gen(node->trueStatement);
+    printf("  jmp .Lbegin%d\n", labelID);
+    printf(".Lend%d:\n", labelID);
+    return;
+
+  case ND_FOR:
+    labelID = publishLabelID();
+    if (node->init != NULL) {
+      gen(node->init);
+    }
+    printf(".Lbegin%d:\n", labelID);
+    if (node->cond != NULL) {
+      gen(node->cond);
+      printf("  pop rax\n");
+      printf("  cmp rax, 0\n");
+      printf("  je .Lend%d\n", labelID);
+    }
+    gen(node->trueStatement);
+    if (node->loop != NULL) {
+      gen(node->loop);
+    }
     printf("  jmp .Lbegin%d\n", labelID);
     printf(".Lend%d:\n", labelID);
     return;

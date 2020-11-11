@@ -219,6 +219,13 @@ Token *tokenize(char *p) {
       continue;
     }
 
+    length = 3;
+    if (is_reserved(p, "for", length)) {
+      cur = new_token(TK_FOR, cur, p, length);
+      p += length;
+      continue;
+    }
+
     length = countWordLength(p);
     if (0 < length) {
       cur = new_token(TK_IDENT, cur, p, length);
