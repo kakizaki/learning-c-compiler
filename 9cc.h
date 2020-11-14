@@ -88,10 +88,12 @@ typedef enum {
   ND_IF_ELSE,
   ND_WHILE,
   ND_FOR,
+  ND_BLOCK,
 
 } NodeKind;
 
 typedef struct Node Node;
+typedef struct NodeList NodeList;
 
 // 抽象構文木のノードの型
 struct Node {
@@ -110,6 +112,15 @@ struct Node {
   Node *falseStatement;
   Node *init;
   Node *loop;
+
+  // { }
+  NodeList *block;
+};
+
+// 
+struct NodeList {
+  Node* node;
+  NodeList *next;
 };
 
 

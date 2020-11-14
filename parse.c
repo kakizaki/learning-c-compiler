@@ -37,12 +37,28 @@ void program() {
 
 
 // statement = expression ";" 
+//          | "{" statement* "}"
 //          | "if" "(" expression ")" statement ("else" statement)?
 //          | "while" "(" expression ")" statement
 //          | "for" "(" expression? ";" expression? ";" expression? ")" statement
 //          | "return" expression ";"
 Node *statement() {
   Node *node;
+
+  if (consume("{")) {
+    NodeList head = { 0, 0 };
+    NodeList* cur = &head;
+
+    while (consume("}") == false) {
+      cur->next = calloc(1, sizeof(NodeList));
+      cur = cur->next;
+      cur->node = statement();
+    }
+
+    node = new_node(ND_BLOCK);
+    node->block = head.next;
+    return node;
+  }
 
   if (consume_token(TK_IF)) {
     node = new_node(ND_IF);

@@ -90,6 +90,7 @@ try 3 'if(1)if(0)return 2;return 3;'
 try 3 'if(0)if(1)return 2;return 3;'
 
 # if else
+echo "### if else"
 try 2 'if(1)return 2;else return 3;'
 try 3 'if(0)return 2;else return 3;'
 try 2 'a=0;if(a+1)return 2;else return 3;'
@@ -99,12 +100,25 @@ try 3 'if(1)if(0)return 2;else return 3;'
 try 4 'if(0)if(1)return 2;else return 3;else return 4;'
 
 # while
+echo "### while"
 try 10 'a=1;while(a<10)a=a+1;return a;'
 try 9 'a=1;while(a+1<10)a=a+1;return a;'
 try 1 'a=1;while(a<0)a=a+1;return a;'
 
 # for
+echo "### for"
 try 45 'b=0;for(a=1;a<10;a=a+1)b=b+a;return b;'
 try 10 'a=0;for(;a<10;)a=a+1;return a;'
+
+# {}
+echo "### {}"
+try 1 '{1;}'
+try 3 '{1;{2;return 3;}}'
+try 2 'if (1) {1;2;}'
+try 4 'if (0) {1;2;} else {3;4;}'
+
+try 3 '{1; {2;} return 3;}'
+try 55 'i=0; j=0; while(i<=10) {j=i+j; i=i+1;} return j;'
+
 
 echo OK

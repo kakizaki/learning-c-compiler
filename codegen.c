@@ -121,6 +121,12 @@ static void gen(Node *node) {
     printf("  jmp .Lbegin%d\n", labelID);
     printf(".Lend%d:\n", labelID);
     return;
+
+  case ND_BLOCK:
+    for (NodeList* n = (node->block); n && n->node; n = n->next) {
+      gen(n->node);
+    }
+    return;
   }
 
   // 上記以外の 2項演算
