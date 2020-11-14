@@ -1,10 +1,15 @@
 #!/bin/bash
+cat <<EOF | gcc -xc -c -o tmp2.o -
+int ret3() { return 3; }
+int ret5() { return 5; }
+EOF
+
 try() {
   expected="$1"
   input="$2"
 
   ./9cc "$input" > tmp.s
-  gcc -o tmp tmp.s
+  gcc -o tmp tmp.s tmp2.o
   ./tmp
   actual="$?"
 
@@ -120,5 +125,9 @@ try 4 'if (0) {1;2;} else {3;4;}'
 try 3 '{1; {2;} return 3;}'
 try 55 'i=0; j=0; while(i<=10) {j=i+j; i=i+1;} return j;'
 
+#
+echo "### function call"
+try 3 'return ret3();'
+try 5 'return ret5();'
 
 echo OK

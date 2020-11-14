@@ -127,6 +127,11 @@ static void gen(Node *node) {
       gen(n->node);
     }
     return;
+
+  case ND_FUNC_CALL:
+    printf("  call %s\n", node->funcName);
+    printf("  push rax\n");
+    return;
   }
 
   // 上記以外の 2項演算

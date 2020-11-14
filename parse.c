@@ -25,6 +25,14 @@ static Node *new_node_num(int val) {
 }
 
 
+static char* copyString(const char* s, int len) {
+  char* d = malloc(len + 1);
+  strncpy(d, s, len);
+  d[len] = '\0';
+  return d;
+}
+
+
 // program = statement*
 void program() {
   int i = 0;
@@ -220,7 +228,9 @@ Node *mul() {
 }
 
 
-// primary = num | indent | '(' expression ')'
+// primary = num 
+//        | indent ('(' ')')?
+//        | '(' expression ')'
 Node *primary() {
   if (consume("(")) {
     Node *node = expression();
@@ -230,29 +240,35 @@ Node *primary() {
 
   Token *ident = consume_ident();
   if (ident) {
-    Node *node = calloc(1, sizeof(Node));
-    node->kind = ND_LVAR;
-
-    LVar *lvar = find_lvar(ident);
-    if (lvar) {
-      node->offset = lvar->offset;
+    if (consume("(")) {
+      expect(")");
+      Node *node = new_node(ND_FUNC_CALL);
+      node->funcName = copyString(ident->str, ident->len);
+      return node;
     }
     else {
-      lvar = calloc(1, sizeof(LVar));
-      lvar->name = ident->str;
-      lvar->len = ident->len;
-
-      // 新しい変数をリストの先頭にする
-      if (locals) {
-        node->offset = locals->offset + 8;
-      } else {
-        node->offset = 8;
+      Node *node = new_node(ND_LVAR);
+      LVar *lvar = find_lvar(ident);
+      if (lvar) {
+        node->offset = lvar->offset;
       }
-      lvar->offset = node->offset;
-      lvar->next = locals;
-      locals = lvar;
+      else {
+        lvar = calloc(1, sizeof(LVar));
+        lvar->name = ident->str;
+        lvar->len = ident->len;
+
+        // 新しい変数をリストの先頭にする
+        if (locals) {
+          node->offset = locals->offset + 8;
+        } else {
+          node->offset = 8;
+        }
+        lvar->offset = node->offset;
+        lvar->next = locals;
+        locals = lvar;
+      }
+      return node;
     }
-    return node;
   }
 
   return new_node_num(expect_number());

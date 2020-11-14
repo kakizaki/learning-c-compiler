@@ -90,6 +90,8 @@ typedef enum {
   ND_FOR,
   ND_BLOCK,
 
+  ND_FUNC_CALL,
+
 } NodeKind;
 
 typedef struct Node Node;
@@ -115,6 +117,9 @@ struct Node {
 
   // { }
   NodeList *block;
+
+  // function call
+  char* funcName;
 };
 
 // 
