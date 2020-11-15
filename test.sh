@@ -131,6 +131,7 @@ echo "### function call"
 try 3 'return ret3();'
 try 5 'return ret5();'
 try 10 'return add(3, 7);'
-try 10 'return add(add(1,2), 7);'
+try 11 'return add(add(1,3), 7);'
+try 12 'a=1;return add(add(a,4), 7);'
 
 echo OK

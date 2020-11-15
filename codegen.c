@@ -143,7 +143,24 @@ static void gen(Node *node) {
         printf("  pop %s\n", argreg[i]);
       }
     }
+
+    // 関数呼び出しの前に RSP を 16 の倍数とする
+    labelID = publishLabelID();
+    printf("  mov rax, rsp\n");
+    printf("  and rax, 15\n");
+    printf("  jnz .L.call.%d\n", labelID);
+    // and の結果、0 なので調整しない
+    printf("  mov rax, 0\n");
     printf("  call %s\n", node->funcName);
+    printf("  jmp .L.end.%d\n", labelID);
+    // 調整する
+    printf(".L.call.%d:\n", labelID);
+    printf("  sub rsp, 8\n"); // 現状、push, pop など8バイト操作しかないため?
+    printf("  mov rax, 0\n");
+    printf("  call %s\n", node->funcName);
+    printf("  add rsp, 8\n");
+    //
+    printf(".L.end.%d:\n", labelID);
     printf("  push rax\n");
     return;
   }
