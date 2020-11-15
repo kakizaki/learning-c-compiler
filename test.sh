@@ -22,116 +22,117 @@ try() {
   fi
 }
 
-try 0 '0;'
-try 42 '42;'
+try 0 'main() {return 0;}'
+try 42 'main() {return 42;}'
 
-try 21 '5+20-4;'
-try 41 ' 12 + 34 - 5 ;'
+try 21 'main() {return 5+20-4;}'
+try 41 'main() {return  12 + 34 - 5 ;}'
 
-try 47 '5+6*7;'
-try 15 '5*(9-6);'
-try 4 '(3+5)/2;'
+try 47 'main() {return 5+6*7;}'
+try 15 'main() {return 5*(9-6);}'
+try 4 'main() {return (3+5)/2;}'
 
-try 10 '-10+20;'
-try 10 '-(5+5)+20;'
+try 10 'main() {return -10+20;}'
+try 10 'main() {return -(5+5)+20;}'
 
-try 0 '1==2;'
-try 1 '2==2;'
-try 0 '2!=2;'
-try 1 '1!=2;'
+try 0 'main() {return 1==2;}'
+try 1 'main() {return 2==2;}'
+try 0 'main() {return 2!=2;}'
+try 1 'main() {return 1!=2;}'
 
-try 0 '2<2;'
-try 1 '1<2;'
-try 0 '2>2;'
-try 1 '3>2;'
+try 0 'main() {return 2<2;}'
+try 1 'main() {return 1<2;}'
+try 0 'main() {return 2>2;}'
+try 1 'main() {return 3>2;}'
 
-try 0 '3<=2;'
-try 1 '2<=2;'
-try 1 '1<=2;'
-try 0 '1>=2;'
-try 1 '2>=2;'
-try 1 '3>=2;'
+try 0 'main() {return 3<=2;}'
+try 1 'main() {return 2<=2;}'
+try 1 'main() {return 1<=2;}'
+try 0 'main() {return 1>=2;}'
+try 1 'main() {return 2>=2;}'
+try 1 'main() {return 3>=2;}'
 
-try 1 '1*2 == 4/2;'
-try 1 '1*2 == (2+2)/(1+1);'
+try 1 'main() {return 1*2 == 4/2;}'
+try 1 'main() {return 1*2 == (2+2)/(1+1);}'
 
 
 # 複文
-try 2 '0;1;2;'
-try 3 '10+20;11*11;1+2;'
+try 2 'main() {0;1; return 2;}'
+try 3 'main() {10+20;11*11; return 1+2;}'
 
 # 変数
-try 3 'a=1+2;'
-try 3 'a=1+2*3-8/2;'
+try 3 'main() {return a=1+2;}'
+try 3 'main() {return a=1+2*3-8/2;}'
 
-try 3 'a=1;b=2;a+b;'
-try 0 'a=1;b=2;c=4/b-a*2;'
+try 3 'main() {a=1;b=2;return a+b;}'
+try 0 'main() {a=1;b=2;return c=4/b-a*2;}'
 
 # 変数 2
-try 3 'abc=1+2;'
-try 3 'abc=1+2*3-8/2;'
+try 3 'main() {return abc=1+2;}'
+try 3 'main() {return abc=1+2*3-8/2;}'
 
-try 3 'abc=1;bzz=2;abc+bzz;'
-try 0 'abc=1;bzz=2;ab=4/bzz-abc*2;'
+try 3 'main() {abc=1;bzz=2;return abc+bzz;}'
+try 0 'main() {abc=1;bzz=2;return ab=4/bzz-abc*2;}'
 
-try 3 '_a12=1;__b__3=2;_a12+__b__3;'
+try 3 'main() {_a12=1;__b__3=2;return _a12+__b__3;}'
+
 
 # return
-try 4 'abc=1+2;return 4;'
-try 3 'abc=1+2*3-8/2;return abc;'
+try 4 'main() {abc=1+2;return 4;}'
+try 3 'main() {abc=1+2*3-8/2;return abc;}'
 
-try 3 'abc=1;bzz=2;return abc+bzz;'
-try 0 'abc=1;bzz=2;return ab=4/bzz-abc*2;'
+try 3 'main() {abc=1;bzz=2;return abc+bzz;}'
+try 0 'main() {abc=1;bzz=2;return ab=4/bzz-abc*2;}'
 
-try 3 '_a12=1;__b__3=2;return _a12+__b__3;'
-try 2 'returnx=2; return returnx;'
+try 3 'main() {_a12=1;__b__3=2;return _a12+__b__3;}'
+try 2 'main() {returnx=2; return returnx;}'
 
 # if
-try 2 'if(1)return 2;return 3;'
-try 3 'if(0)return 2;return 3;'
-try 2 'a=0;if(a+1)return 2;return 3;'
+try 2 'main() {if(1)return 2;return 3;}'
+try 3 'main() {if(0)return 2;return 3;}'
+try 2 'main() {a=0;if(a+1)return 2;return 3;}'
 
-try 2 'if(1)if(1)return 2;return 3;'
-try 3 'if(1)if(0)return 2;return 3;'
-try 3 'if(0)if(1)return 2;return 3;'
+try 2 'main() {if(1)if(1)return 2;return 3;}'
+try 3 'main() {if(1)if(0)return 2;return 3;}'
+try 3 'main() {if(0)if(1)return 2;return 3;}'
+
 
 # if else
 echo "### if else"
-try 2 'if(1)return 2;else return 3;'
-try 3 'if(0)return 2;else return 3;'
-try 2 'a=0;if(a+1)return 2;else return 3;'
+try 2 'main() {if(1)return 2;else return 3;}'
+try 3 'main() {if(0)return 2;else return 3;}'
+try 2 'main() {a=0;if(a+1)return 2;else return 3;}'
 
-try 2 'if(1)if(1)return 2;else return 3;'
-try 3 'if(1)if(0)return 2;else return 3;'
-try 4 'if(0)if(1)return 2;else return 3;else return 4;'
+try 2 'main() {if(1)if(1)return 2;else return 3;}'
+try 3 'main() {if(1)if(0)return 2;else return 3;}'
+try 4 'main() {if(0)if(1)return 2;else return 3;else return 4;}'
 
 # while
 echo "### while"
-try 10 'a=1;while(a<10)a=a+1;return a;'
-try 9 'a=1;while(a+1<10)a=a+1;return a;'
-try 1 'a=1;while(a<0)a=a+1;return a;'
+try 10 'main() {a=1;while(a<10)a=a+1;return a;}'
+try 9 'main() {a=1;while(a+1<10)a=a+1;return a;}'
+try 1 'main() {a=1;while(a<0)a=a+1;return a;}'
 
 # for
 echo "### for"
-try 45 'b=0;for(a=1;a<10;a=a+1)b=b+a;return b;'
-try 10 'a=0;for(;a<10;)a=a+1;return a;'
+try 45 'main() {b=0;for(a=1;a<10;a=a+1)b=b+a;return b;}'
+try 10 'main() {a=0;for(;a<10;)a=a+1;return a;}'
 
 # {}
 echo "### {}"
-try 1 '{1;}'
-try 3 '{1;{2;return 3;}}'
-try 2 'if (1) {1;2;}'
-try 4 'if (0) {1;2;} else {3;4;}'
+try 3 'main() {{1;{2;return 3;}}}'
+try 2 'main() {if (1) {1;return 2;}}'
+try 4 'main() {if (0) {1;2;} else {3; return 4;}}'
 
-try 3 '{1; {2;} return 3;}'
-try 55 'i=0; j=0; while(i<=10) {j=i+j; i=i+1;} return j;'
+try 3 'main() {{1; {2;} return 3;}}'
+try 55 'main() {i=0; j=0; while(i<=10) {j=i+j; i=i+1;} return j;}'
 
 #
 echo "### function call"
-try 3 'return ret3();'
-try 5 'return ret5();'
-try 10 'return add(3, 7);'
-try 11 'return add(add(1,3), 7);'
-try 12 'a=1;return add(add(a,4), 7);'
+try 3 'main() {return ret3();}'
+try 5 'main() {return ret5();}'
+try 10 'main() {return add(3, 7);}'
+try 11 'main() {return add(add(1,3), 7);}'
+try 12 'main() {a=1;return add(add(a,4), 7);}'
 
 echo OK

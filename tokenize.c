@@ -31,7 +31,7 @@ void expect(char *op) {
   if (token->kind != TK_RESERVED 
   || strlen(op) != token->len
   || memcmp(token->str, op, token->len) != 0) {
-    error_at(token->str, "'%c'ではありません", op);
+    error_at(token->str, "'%s'ではありません", op);
   }
 
   token = token->next;
@@ -47,6 +47,18 @@ int expect_number() {
   token = token->next;
   return val;
 }
+
+
+// 現在のトークンが識別子だった場合に、次のトークンへ移動する
+Token *expect_ident() {
+  if (token->kind != TK_IDENT) 
+    error_at(token->str, "識別子ではありません");
+
+  Token *t = token;
+  token = token->next;
+  return t;
+}
+
 
 
 static bool startWith(char *p, char *q) {

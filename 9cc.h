@@ -33,31 +33,19 @@ struct Token {
 };
 
 
-// ローカル変数の型
-typedef struct LVar LVar;
-
-struct LVar {
-  LVar *next;     // 次の変数、または、NULL
-  char *name;     // 変数の名前
-  int len;        // 名前の長さ
-  int offset;     // RBPからのオフセット
-};
-
-// ローカル変数
-LVar *locals;
-
-LVar *find_lvar(Token *tok);
-
-
-
+//
 void error(char *fmt, ...);
 void error_at(char *loc, char *fmt, ...);
+
 void expect(char *op);
 int expect_number();
+Token *expect_ident();
+
 bool confirm_reserved(char *op);
 bool consume_reserved(char *op);
 bool consume_token(TokenKind t);
 Token *consume_ident();
+
 bool at_eof();
 
 Token *tokenize(char *p);
@@ -92,7 +80,6 @@ typedef enum {
   ND_BLOCK,
 
   ND_FUNC_CALL,
-
 } NodeKind;
 
 typedef struct Node Node;
@@ -119,7 +106,7 @@ struct Node {
   // { }
   NodeList *block;
 
-  // function call
+  // function call / function define
   char* funcName;
   NodeList *args;
 };
@@ -131,7 +118,45 @@ struct NodeList {
 };
 
 
-void program();
+// ローカル変数の型
+typedef struct LVar LVar;
+
+struct LVar {
+  LVar *next;     // 次の変数、または、NULL
+  char *name;     // 変数の名前
+  int len;        // 名前の長さ
+  int offset;     // RBPからのオフセット
+};
+
+// ローカル変数
+//LVar *locals;
+//LVar *find_lvar(Token *tok);
+LVar *find_lvar(LVar *l, Token *tok);
+
+
+
+
+// 関数
+typedef struct Function Function;
+
+struct Function {
+  Function *next;
+  char *name;
+  LVar *locals;
+  NodeList *block;
+  int stackSize;
+};
+
+
+//
+struct Program {
+  Function *function;
+};
+
+
+Function* program();
+Function* function();
+NodeList *funcArgs();
 Node *statement();
 Node *expression();
 Node *assign();

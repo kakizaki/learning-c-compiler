@@ -1,7 +1,6 @@
 #include "9cc.h"
 
-Node *code[100];
-
+static LVar *locals = NULL;
 
 static Node *new_node(NodeKind kind) {
   Node *node = calloc(1, sizeof(Node));
@@ -33,14 +32,45 @@ static char* copyString(const char* s, int len) {
 }
 
 
-// program = statement*
-void program() {
-  int i = 0;
+// program = function*
+// TODO とりあえず、1関数のみにしておく (program = function)
+Function *program() {
   while (!at_eof()) {
-    code[i] = statement();
-    ++i;
+    return function();
+    break;
   }
-  code[i] = NULL;
+  return NULL;
+}
+
+
+// function = ident func-args? "{" statement* "}"
+Function* function() {
+  locals = NULL;
+
+  Token *ident = expect_ident();
+  Function *func = calloc(1, sizeof(Function));
+  func->name = copyString(ident->str, ident->len);
+
+  NodeList *args = funcArgs();
+  // TODO とりあえず、引数なしとして扱う
+
+  expect("{");
+  NodeList head = { 0, 0 };
+  NodeList* cur = &head;
+
+  while (consume_reserved("}") == false) {
+    cur->next = calloc(1, sizeof(NodeList));
+    cur = cur->next;
+    cur->node = statement();
+  }
+
+  func->block = head.next;
+  func->locals = locals;
+  if (locals) {
+    // locals は先頭に追加されていくので、先頭の offset を見ればよし
+    func->stackSize = locals->offset;
+  }
+  return func;
 }
 
 
@@ -269,7 +299,7 @@ Node *primary() {
       return node;
     } else {
       Node *node = new_node(ND_LVAR);
-      LVar *lvar = find_lvar(ident);
+      LVar *lvar = find_lvar(locals, ident);
       if (lvar) {
         node->offset = lvar->offset;
       }

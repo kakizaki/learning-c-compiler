@@ -8,10 +8,8 @@ char* user_input;
 Token *token;
 
 //
-LVar *locals = NULL;
-
-LVar *find_lvar(Token *tok) {
-  for (LVar *var = locals; var; var = var->next) {
+LVar *find_lvar(LVar *v, Token *tok) {
+  for (LVar *var = v; var; var = var->next) {
     if (var->len == tok->len && !memcmp(tok->str, var->name, var->len)) {
       return var;
     }
@@ -31,10 +29,10 @@ int main(int argc, char **argv) {
   //
   user_input = argv[1];
   token = tokenize(argv[1]);
-  program();
+  Function *mainFunction = program();
 
   //
-  codegen();
+  codegen(mainFunction);
 
   return 0;
 }

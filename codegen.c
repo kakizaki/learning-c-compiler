@@ -2,6 +2,9 @@
 #include "9cc.h"
 
 
+static char *funcname;
+
+
 static void gen_lval(Node *node) {
   if (node->kind != ND_LVAR) {
     error("代入の左辺値が変数ではありません");
@@ -66,9 +69,7 @@ static void gen(Node *node) {
   case ND_RETURN:
     gen(node->lhs);
     printf("  pop rax\n");
-    printf("  mov rsp, rbp\n");
-    printf("  pop rbp\n");
-    printf("  ret\n");
+    printf("  jmp .L.return.%s\n", funcname);
     return;
 
   case ND_IF:
@@ -213,31 +214,31 @@ static void gen(Node *node) {
 
 
 
-void codegen() {
-  // アセンブリの前半部分
+void codegen(Function *mainFunction) {
   printf(".intel_syntax noprefix\n");
-  printf(".global main\n");
-  printf("main:\n");
 
-  // 変数26個の領域を確保
+  Function *f = mainFunction;
+  funcname = f->name;
+
+  printf(".global %s\n", f->name);
+  printf("%s:\n", f->name);
+
+  // 変数の領域を確保
   printf("  push rbp\n");
   printf("  mov rbp, rsp\n");
-  printf("  sub rsp, 208\n");
+  printf("  sub rsp, %d\n", f->stackSize);
 
-  // 
-  int i = 0;
-  while (code[i] != NULL) {
-    gen(code[i]);
+  for (NodeList *n = f->block; n && n->node; n = n->next) {
+    gen(n->node);
 
     // 式の評価結果としてスタックに1つの値が残っているはずなので
     // スタックが溢れないように pop しておく
-    printf("  pop rax\n");
-
-    ++i;
+    //printf("  pop rax\n");
   }
 
   // 最後の式の結果が rax に残っているので
   // それが返り値になる
+  printf(".L.return.%s:\n", f->name);
   printf("  mov rsp, rbp\n");
   printf("  pop rbp\n");
   printf("  ret\n");
