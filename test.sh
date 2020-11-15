@@ -2,6 +2,7 @@
 cat <<EOF | gcc -xc -c -o tmp2.o -
 int ret3() { return 3; }
 int ret5() { return 5; }
+int add(int a, int b) { return a + b; }
 EOF
 
 try() {
@@ -129,5 +130,7 @@ try 55 'i=0; j=0; while(i<=10) {j=i+j; i=i+1;} return j;'
 echo "### function call"
 try 3 'return ret3();'
 try 5 'return ret5();'
+try 10 'return add(3, 7);'
+try 10 'return add(add(1,2), 7);'
 
 echo OK

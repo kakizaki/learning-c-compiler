@@ -22,6 +22,10 @@ int publishLabelID() {
   return i;
 }
 
+static char *argreg[] = {
+  "rdi", "rsi", "rdx", "rcx", "r8", "r9"
+};
+
 
 static void gen(Node *node) {
   int labelID;
@@ -129,6 +133,16 @@ static void gen(Node *node) {
     return;
 
   case ND_FUNC_CALL:
+    {
+      int argsLength = 0;
+      for (NodeList* n = (node->args); n && n->node; n = n->next) {
+        gen(n->node);
+        argsLength++;
+      }
+      for (int i = argsLength - 1; 0 <= i ; i--) {
+        printf("  pop %s\n", argreg[i]);
+      }
+    }
     printf("  call %s\n", node->funcName);
     printf("  push rax\n");
     return;

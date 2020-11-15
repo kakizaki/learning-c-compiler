@@ -53,11 +53,11 @@ void program() {
 Node *statement() {
   Node *node;
 
-  if (consume("{")) {
+  if (consume_reserved("{")) {
     NodeList head = { 0, 0 };
     NodeList* cur = &head;
 
-    while (consume("}") == false) {
+    while (consume_reserved("}") == false) {
       cur->next = calloc(1, sizeof(NodeList));
       cur = cur->next;
       cur->node = statement();
@@ -99,21 +99,21 @@ Node *statement() {
     node = new_node(ND_FOR);
 
     expect("(");
-    if (consume(";")) {
+    if (consume_reserved(";")) {
       node->init = NULL;
     } else {
       node->init = expression();
       expect(";");
     }
 
-    if (consume(";")) {
+    if (consume_reserved(";")) {
       node->cond = NULL;
     } else {
       node->cond = expression();
       expect(";");
     }
 
-    if (consume(")")) {
+    if (consume_reserved(")")) {
       node->loop = NULL;
     } else {
       node->loop = expression();
@@ -147,7 +147,7 @@ Node *expression() {
 Node *assign() {
   Node *node = equality();
 
-  if (consume("=")) {
+  if (consume_reserved("=")) {
     node = new_node_binary(ND_ASSIGN, node, assign());
     return node;
   }
@@ -161,10 +161,10 @@ Node *equality() {
   Node *node = relational();
 
   for (;;) {
-    if (consume("==")) {
+    if (consume_reserved("==")) {
       node = new_node_binary(ND_EQ, node, relational());
     }
-    else if (consume("!=")) {
+    else if (consume_reserved("!=")) {
       node = new_node_binary(ND_NE, node, relational());
     }
     else {
@@ -179,16 +179,16 @@ Node *relational() {
   Node *node = add();
 
   for (;;) {
-    if (consume("<")) {
+    if (consume_reserved("<")) {
       node = new_node_binary(ND_LT, node, add());
     }
-    else if (consume("<=")) {
+    else if (consume_reserved("<=")) {
       node = new_node_binary(ND_LE, node, add());
     }
-    else if (consume(">")) {
+    else if (consume_reserved(">")) {
       node = new_node_binary(ND_LT, add(), node);
     }
-    else if (consume(">=")) {
+    else if (consume_reserved(">=")) {
       node = new_node_binary(ND_LE, add(), node);
     }
     else {
@@ -203,9 +203,9 @@ Node *add() {
   Node *node = mul();
 
   for (;;) {
-    if (consume("+")) 
+    if (consume_reserved("+")) 
       node = new_node_binary(ND_ADD, node, mul());
-    else if (consume("-"))
+    else if (consume_reserved("-"))
       node = new_node_binary(ND_SUB, node, mul());
     else
       return node; 
@@ -218,9 +218,9 @@ Node *mul() {
   Node *node = unary();
 
   for (;;) {
-    if (consume("*"))
+    if (consume_reserved("*"))
       node = new_node_binary(ND_MUL, node, unary());
-    else if (consume("/"))
+    else if (consume_reserved("/"))
       node = new_node_binary(ND_DIV, node, unary());
     else
       return node;
@@ -228,11 +228,33 @@ Node *mul() {
 }
 
 
+// func-args = '(' ( assign (',' assign)* )?  ')'
+NodeList *funcArgs() {
+  expect("(");
+  if (consume_reserved(")")) {
+    return NULL;
+  }
+
+  NodeList* head = calloc(1, sizeof(NodeList));
+  head->node = assign();
+  
+  NodeList* cur = head;
+  while (consume_reserved(",")) {
+    cur->next = calloc(1, sizeof(NodeList));
+    cur = cur->next;
+    cur->node = assign();
+  }
+
+  expect(")");
+  return head;
+}
+
+
 // primary = num 
-//        | indent ('(' ')')?
+//        | indent func-args?
 //        | '(' expression ')'
 Node *primary() {
-  if (consume("(")) {
+  if (consume_reserved("(")) {
     Node *node = expression();
     expect(")");
     return node;
@@ -240,13 +262,12 @@ Node *primary() {
 
   Token *ident = consume_ident();
   if (ident) {
-    if (consume("(")) {
-      expect(")");
+    if (confirm_reserved("(")) {
       Node *node = new_node(ND_FUNC_CALL);
       node->funcName = copyString(ident->str, ident->len);
+      node->args = funcArgs();
       return node;
-    }
-    else {
+    } else {
       Node *node = new_node(ND_LVAR);
       LVar *lvar = find_lvar(ident);
       if (lvar) {
@@ -277,10 +298,10 @@ Node *primary() {
 
 // unary = ('+' | '-')? primary
 Node *unary() {
-  if (consume("+")) {
+  if (consume_reserved("+")) {
     return primary();
   }
-  if (consume("-")) {
+  if (consume_reserved("-")) {
     return new_node_binary(ND_SUB, new_node_num(0), primary());
   }
   return primary();

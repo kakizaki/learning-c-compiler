@@ -93,9 +93,22 @@ static bool is_reserved(const char* p, const char* word, int len) {
   return true;
 }
 
+
+// 現在のトークンが期待する記号かどうか確認する
+// 結果を返す
+bool confirm_reserved(char *op) {
+  if (token->kind != TK_RESERVED 
+  || strlen(op) != token->len 
+  || memcmp(token->str, op, token->len) != 0) {
+    return false;
+  }
+  return true;
+}
+
+
 // 現在のトークンが期待する記号だった場合に、次のトークンへ移動する
 // 結果を返す
-bool consume(char *op) {
+bool consume_reserved(char *op) {
   if (token->kind != TK_RESERVED 
   || strlen(op) != token->len 
   || memcmp(token->str, op, token->len) != 0) {
@@ -187,6 +200,7 @@ Token *tokenize(char *p) {
     || *p == '='
     || *p == '{'
     || *p == '}'
+    || *p == ','
     ) {
       cur = new_token(TK_RESERVED, cur, p, 1);
       p++;

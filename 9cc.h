@@ -54,7 +54,8 @@ void error(char *fmt, ...);
 void error_at(char *loc, char *fmt, ...);
 void expect(char *op);
 int expect_number();
-bool consume(char *op);
+bool confirm_reserved(char *op);
+bool consume_reserved(char *op);
 bool consume_token(TokenKind t);
 Token *consume_ident();
 bool at_eof();
@@ -120,6 +121,7 @@ struct Node {
 
   // function call
   char* funcName;
+  NodeList *args;
 };
 
 // 
