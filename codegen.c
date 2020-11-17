@@ -214,33 +214,37 @@ static void gen(Node *node) {
 
 
 
-void codegen(Function *mainFunction) {
+void codegen(Function *program) {
   printf(".intel_syntax noprefix\n");
 
-  Function *f = mainFunction;
-  funcname = f->name;
+  for (Function *f = program; f; f = f->next) {
+    funcname = f->name;
 
-  printf(".global %s\n", f->name);
-  printf("%s:\n", f->name);
+    printf(".global %s\n", f->name);
+    printf("%s:\n", f->name);
 
-  // 変数の領域を確保
-  printf("  push rbp\n");
-  printf("  mov rbp, rsp\n");
-  printf("  sub rsp, %d\n", f->stackSize);
+    // 変数の領域を確保
+    printf("  push rbp\n");
+    printf("  mov rbp, rsp\n");
+    printf("  sub rsp, %d\n", f->stackSize);
 
-  for (NodeList *n = f->block; n && n->node; n = n->next) {
-    gen(n->node);
+    for (NodeList *n = f->block; n && n->node; n = n->next) {
+      gen(n->node);
 
-    // 式の評価結果としてスタックに1つの値が残っているはずなので
-    // スタックが溢れないように pop しておく
-    //printf("  pop rax\n");
+      // 式の評価結果としてスタックに1つの値が残っているはずなので
+      // スタックが溢れないように pop しておく
+      // HACK コメントアウト
+      //   "main() {a=1;if(0)1;return a;}"" がエラーとなる
+      //   else を通る際に push がないが、ここで pop してしまっている
+      //printf("  pop rax # aaa\n");
+    }
+
+    // 最後の式の結果が rax に残っているので
+    // それが返り値になる
+    printf(".L.return.%s:\n", f->name);
+    printf("  mov rsp, rbp\n");
+    printf("  pop rbp\n");
+    printf("  ret\n");
   }
-
-  // 最後の式の結果が rax に残っているので
-  // それが返り値になる
-  printf(".L.return.%s:\n", f->name);
-  printf("  mov rsp, rbp\n");
-  printf("  pop rbp\n");
-  printf("  ret\n");
 }
 

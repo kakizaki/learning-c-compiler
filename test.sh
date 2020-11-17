@@ -17,10 +17,18 @@ try() {
   if [ "$actual" = "$expected" ]; then
     echo "$input => $actual"
   else
-    echo "$expected expected, but got $actual"
+    echo "$expected expected, but got $actual >> $input"
     exit 1
   fi
 }
+
+<< COMMENTOUT
+try 1 'main() {1;}'
+try 1 'main() {a=1;if(1)a;1;}'
+try 1 'main() {a=1;if(1)2;a;}'
+try 1 'main() {a=1;if(0)2;a;}'
+try 1 'main() {a=1;{if(0)2;}a;}'
+COMMENTOUT
 
 try 0 'main() {return 0;}'
 try 42 'main() {return 42;}'
@@ -135,4 +143,7 @@ try 10 'main() {return add(3, 7);}'
 try 11 'main() {return add(add(1,3), 7);}'
 try 12 'main() {a=1;return add(add(a,4), 7);}'
 
+#
+echo "### function"
+try 3 'main() { a=1; return a + f();} f() { a=2; return a;}'
 echo OK

@@ -33,13 +33,17 @@ static char* copyString(const char* s, int len) {
 
 
 // program = function*
-// TODO とりあえず、1関数のみにしておく (program = function)
 Function *program() {
+  Function head = {};
+  Function *cur = &head;
+
   while (!at_eof()) {
-    return function();
-    break;
+    Function *f = function();
+    cur->next = f;
+    cur = f;
   }
-  return NULL;
+
+  return head.next;
 }
 
 
