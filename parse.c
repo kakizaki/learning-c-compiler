@@ -1,6 +1,8 @@
 #include "9cc.h"
 
-static LVar *locals = NULL;
+static VarList *localVarList = NULL;
+static int stackSize = 0;
+
 
 static Node *new_node(NodeKind kind) {
   Node *node = calloc(1, sizeof(Node));
@@ -32,6 +34,26 @@ static char* copyString(const char* s, int len) {
 }
 
 
+static LVar *existsOrNewVariable(Token *t) {
+  LVar *l = find_lvar(localVarList, t);
+  if (l != NULL) {
+    return l;
+  }
+
+  stackSize += 8;
+  l = calloc(1, sizeof(LVar));
+  l->name = copyString(t->str, t->len);
+  l->len = t->len;
+  l->offset = stackSize;
+
+  VarList *v = calloc(1, sizeof(VarList));
+  v->var = l;
+  v->next = localVarList;
+  localVarList = v;
+  return l;
+}
+
+
 // program = function*
 Function *program() {
   Function head = {};
@@ -47,16 +69,15 @@ Function *program() {
 }
 
 
-// function = ident func-args? "{" statement* "}"
+// function = ident func-params? "{" statement* "}"
 Function* function() {
-  locals = NULL;
+  localVarList = NULL;
+  stackSize = 0;
 
   Token *ident = expect_ident();
   Function *func = calloc(1, sizeof(Function));
   func->name = copyString(ident->str, ident->len);
-
-  NodeList *args = funcArgs();
-  // TODO とりあえず、引数なしとして扱う
+  func->params = funcParams();
 
   expect("{");
   NodeList head = { 0, 0 };
@@ -69,13 +90,35 @@ Function* function() {
   }
 
   func->block = head.next;
-  func->locals = locals;
-  if (locals) {
-    // locals は先頭に追加されていくので、先頭の offset を見ればよし
-    func->stackSize = locals->offset;
-  }
+  func->locals = localVarList;
+  func->stackSize = stackSize;
   return func;
 }
+
+
+// func-params = '(' ( ident (',' ident)* )?  ')'
+VarList *funcParams() {
+  expect("(");
+  if (consume_reserved(")")) {
+    return NULL;
+  }
+
+  Token *ident = expect_ident();
+  VarList *cur = calloc(1, sizeof(VarList));
+  cur->var = existsOrNewVariable(ident);
+
+  VarList *head = cur;
+  while (consume_reserved(",")) {
+    ident = expect_ident();
+    VarList *l = calloc(1, sizeof(VarList));
+    l->var = existsOrNewVariable(ident);
+    cur->next = l;
+    cur = l;
+  } 
+  expect(")");
+  return head;
+}
+
 
 
 // statement = expression ";" 
@@ -303,25 +346,8 @@ Node *primary() {
       return node;
     } else {
       Node *node = new_node(ND_LVAR);
-      LVar *lvar = find_lvar(locals, ident);
-      if (lvar) {
-        node->offset = lvar->offset;
-      }
-      else {
-        lvar = calloc(1, sizeof(LVar));
-        lvar->name = ident->str;
-        lvar->len = ident->len;
-
-        // 新しい変数をリストの先頭にする
-        if (locals) {
-          node->offset = locals->offset + 8;
-        } else {
-          node->offset = 8;
-        }
-        lvar->offset = node->offset;
-        lvar->next = locals;
-        locals = lvar;
-      }
+      LVar *v = existsOrNewVariable(ident);
+      node->offset = v->offset;
       return node;
     }
   }

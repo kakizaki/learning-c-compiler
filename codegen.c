@@ -228,6 +228,13 @@ void codegen(Function *program) {
     printf("  mov rbp, rsp\n");
     printf("  sub rsp, %d\n", f->stackSize);
 
+    // 引数をスタックに追加
+    int i = 0;
+    for (VarList *v = f->params; v && v->var; v = v->next) {
+      printf("  mov [rbp-%d], %s\n", v->var->offset, argreg[i]);
+      i++;
+    }  
+
     for (NodeList *n = f->block; n && n->node; n = n->next) {
       gen(n->node);
 

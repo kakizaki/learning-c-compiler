@@ -122,16 +122,23 @@ struct NodeList {
 typedef struct LVar LVar;
 
 struct LVar {
-  LVar *next;     // 次の変数、または、NULL
   char *name;     // 変数の名前
   int len;        // 名前の長さ
   int offset;     // RBPからのオフセット
 };
 
+typedef struct VarList VarList;
+
+struct VarList {
+  LVar *var;
+  VarList *next;
+};
+
+
 // ローカル変数
 //LVar *locals;
 //LVar *find_lvar(Token *tok);
-LVar *find_lvar(LVar *l, Token *tok);
+LVar *find_lvar(VarList *l, Token *tok);
 
 
 
@@ -142,7 +149,8 @@ typedef struct Function Function;
 struct Function {
   Function *next;
   char *name;
-  LVar *locals;
+  VarList *params;
+  VarList *locals;
   NodeList *block;
   int stackSize;
 };
@@ -156,6 +164,7 @@ struct Program {
 
 Function* program();
 Function* function();
+VarList *funcParams();
 NodeList *funcArgs();
 Node *statement();
 Node *expression();

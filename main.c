@@ -8,10 +8,10 @@ char* user_input;
 Token *token;
 
 //
-LVar *find_lvar(LVar *v, Token *tok) {
-  for (LVar *var = v; var; var = var->next) {
-    if (var->len == tok->len && !memcmp(tok->str, var->name, var->len)) {
-      return var;
+LVar *find_lvar(VarList *list, Token *tok) {
+  for (VarList *v = list; v && v->var; v = v->next) {
+    if (v->var->len == tok->len && !memcmp(tok->str, v->var->name, v->var->len)) {
+      return v->var;
     }
   }
   return NULL;

@@ -3,6 +3,7 @@ cat <<EOF | gcc -xc -c -o tmp2.o -
 int ret3() { return 3; }
 int ret5() { return 5; }
 int add(int a, int b) { return a + b; }
+int sub(int a, int b) { return a - b; }
 EOF
 
 try() {
@@ -29,6 +30,7 @@ try 1 'main() {a=1;if(1)2;a;}'
 try 1 'main() {a=1;if(0)2;a;}'
 try 1 'main() {a=1;{if(0)2;}a;}'
 COMMENTOUT
+
 
 try 0 'main() {return 0;}'
 try 42 'main() {return 42;}'
@@ -142,8 +144,16 @@ try 5 'main() {return ret5();}'
 try 10 'main() {return add(3, 7);}'
 try 11 'main() {return add(add(1,3), 7);}'
 try 12 'main() {a=1;return add(add(a,4), 7);}'
+try 2 'main() {return sub(3, 1);}'
 
 #
 echo "### function"
 try 3 'main() { a=1; return a + f();} f() { a=2; return a;}'
+try 2 'main() { return f(1);} f(a) { return a + 1; }'
+try 3 'main() { return f(3, 1);} f(a, b) { return a; }'
+try 1 'main() { return f(3, 1);} f(a, b) { return b; }'
+try 7 'main() { return add2(3, 4);} add2(a, b) { return a+b; }'
+try 1 'main() { return sub2(4, 3);} sub2(a, b) { return a-b; }'
+try 55 'main() { return fib(9);} fib(x) { if (x<=1) return 1; return fib(x-1) + fib(x-2); }'
+
 echo OK
