@@ -54,6 +54,12 @@ static LVar *existsOrNewVariable(Token *t) {
 }
 
 
+static LVar *getVariableOrNull(Token *t) {
+  return find_lvar(localVarList, t);
+}
+
+
+
 // program = function*
 Function *program() {
   Function head = {};
@@ -96,22 +102,25 @@ Function* function() {
 }
 
 
-// func-params = '(' ( ident (',' ident)* )?  ')'
+// func-params = '(' ( 'int' ident (',' 'int' ident)* )?  ')'
 VarList *funcParams() {
   expect("(");
   if (consume_reserved(")")) {
     return NULL;
   }
 
+  expect_token(TK_INT);
   Token *ident = expect_ident();
-  VarList *cur = calloc(1, sizeof(VarList));
-  cur->var = existsOrNewVariable(ident);
+  VarList *head = calloc(1, sizeof(VarList));
+  head->var = existsOrNewVariable(ident);
 
-  VarList *head = cur;
+  VarList *cur = head;
   while (consume_reserved(",")) {
+    expect_token(TK_INT);
     ident = expect_ident();
     VarList *l = calloc(1, sizeof(VarList));
     l->var = existsOrNewVariable(ident);
+  
     cur->next = l;
     cur = l;
   } 
@@ -328,6 +337,7 @@ NodeList *funcArgs() {
 
 
 // primary = num 
+//        | 'int' ident
 //        | indent func-args?
 //        | '(' expression ')'
 Node *primary() {
@@ -337,18 +347,31 @@ Node *primary() {
     return node;
   }
 
-  Token *ident = consume_ident();
-  if (ident) {
-    if (confirm_reserved("(")) {
-      Node *node = new_node(ND_FUNC_CALL);
-      node->funcName = copyString(ident->str, ident->len);
-      node->args = funcArgs();
-      return node;
-    } else {
-      Node *node = new_node(ND_LVAR);
-      LVar *v = existsOrNewVariable(ident);
-      node->offset = v->offset;
-      return node;
+  if (consume_token(TK_INT)) {
+    Token *ident = expect_ident();
+    LVar *v = existsOrNewVariable(ident);
+    Node *node = new_node(ND_LVAR);
+    node->offset = v->offset;
+    return node;
+  } 
+
+  {
+    Token *ident = consume_ident();
+    if (ident) {
+      if (confirm_reserved("(")) {
+        Node *node = new_node(ND_FUNC_CALL);
+        node->funcName = copyString(ident->str, ident->len);
+        node->args = funcArgs();
+        return node;
+      } else {
+        Node *node = new_node(ND_LVAR);
+        LVar *v = getVariableOrNull(ident);
+        if (v == NULL) {
+            error_at(ident->str, "定義されていない変数を使用しました");
+        }
+        node->offset = v->offset;
+        return node;
+      }
     }
   }
 

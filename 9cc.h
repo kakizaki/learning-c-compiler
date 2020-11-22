@@ -18,6 +18,7 @@ typedef enum {
   TK_ELSE,      // else
   TK_WHILE,     // while
   TK_FOR,       // for
+  TK_INT,       // int
   TK_EOF,       // 入力の終わりを表すトークン
 } TokenKind;
 
@@ -38,6 +39,7 @@ void error(char *fmt, ...);
 void error_at(char *loc, char *fmt, ...);
 
 void expect(char *op);
+void expect_token(TokenKind t);
 int expect_number();
 Token *expect_ident();
 

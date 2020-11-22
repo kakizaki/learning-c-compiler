@@ -38,6 +38,16 @@ void expect(char *op) {
 }
 
 
+// 現在のトークンが期待するトークンだった場合に、次のトークンへ移動する
+void expect_token(TokenKind t) {
+  if (token->kind != t) {
+    error_at(token->str, "'トークンではありません");
+  }
+
+  token = token->next;
+}
+
+
 // 現在のトークンが数字だった場合に、次のトークンへ移動する
 int expect_number() {
   if (token->kind != TK_NUM) 
@@ -220,9 +230,9 @@ Token *tokenize(char *p) {
     }
 
     if (is_reserved_char(*p)) {
-      cur = new_token(TK_RESERVED, cur, p, 1);
-      p++;
-      continue;
+       cur = new_token(TK_RESERVED, cur, p, 1);
+       p++;
+       continue;
     }
 
     length = 6;
@@ -256,6 +266,13 @@ Token *tokenize(char *p) {
     length = 3;
     if (is_reserved(p, "for", length)) {
       cur = new_token(TK_FOR, cur, p, length);
+      p += length;
+      continue;
+    }
+
+    length = 3;
+    if (is_reserved(p, "int", length)) {
+      cur = new_token(TK_INT, cur, p, length);
       p += length;
       continue;
     }
