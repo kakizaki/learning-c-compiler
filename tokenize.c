@@ -105,6 +105,29 @@ static bool is_reserved(const char* p, const char* word, int len) {
   return true;
 }
 
+static bool is_reserved_char(const char p) {
+    if (
+      p == '<' 
+    || p == '>'
+    || p == '+' 
+    || p == '-' 
+    || p == '*' 
+    || p == '/'
+    || p == '('
+    || p == ')'
+    || p == ';'
+    || p == '='
+    || p == '{'
+    || p == '}'
+    || p == ','
+    || p == '&'
+    ) {
+      return true;
+    }
+
+    return false;
+}
+
 
 // 現在のトークンが期待する記号かどうか確認する
 // 結果を返す
@@ -196,24 +219,7 @@ Token *tokenize(char *p) {
       continue;
     }
 
-    if (*p == '<' || *p == '>') {
-      cur = new_token(TK_RESERVED, cur, p, 1);
-      p++;
-      continue;
-    }
-
-    if (*p == '+' 
-    || *p == '-' 
-    || *p == '*' 
-    || *p == '/'
-    || *p == '('
-    || *p == ')'
-    || *p == ';'
-    || *p == '='
-    || *p == '{'
-    || *p == '}'
-    || *p == ','
-    ) {
+    if (is_reserved_char(*p)) {
       cur = new_token(TK_RESERVED, cur, p, 1);
       p++;
       continue;

@@ -156,4 +156,9 @@ try 7 'main() { return add2(3, 4);} add2(a, b) { return a+b; }'
 try 1 'main() { return sub2(4, 3);} sub2(a, b) { return a-b; }'
 try 55 'main() { return fib(9);} fib(x) { if (x<=1) return 1; return fib(x-1) + fib(x-2); }'
 
+#
+echo "### & , * "
+try 1 'main() { a = 1; b = &a; return *b; }'
+try 3 'main() { a = 3; b = 5; c = &b + 8; return *c; }'
+try 4 'main() { a = 3; b = 1 + *(&a); return b; }'
 echo OK

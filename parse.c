@@ -356,13 +356,30 @@ Node *primary() {
 }
 
 
-// unary = ('+' | '-')? primary
+// unary =  '+'? primary
+//        | '-'? primary
+//        | '&' unary
+//        | '*' unary
 Node *unary() {
+  if (consume_reserved("&")) {
+    Node *node = new_node(ND_ADDR);
+    node->lhs = unary();
+    return node;
+  }
+
+  if (consume_reserved("*")) {
+    Node *node = new_node(ND_DEREF);
+    node->lhs = unary();
+    return node;
+  }
+
   if (consume_reserved("+")) {
     return primary();
   }
+
   if (consume_reserved("-")) {
     return new_node_binary(ND_SUB, new_node_num(0), primary());
   }
+
   return primary();
 }
