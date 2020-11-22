@@ -75,10 +75,12 @@ Function *program() {
 }
 
 
-// function = ident func-params? "{" statement* "}"
+// function = 'int' ident func-params? "{" statement* "}"
 Function* function() {
   localVarList = NULL;
   stackSize = 0;
+
+  expect_token(TK_INT);
 
   Token *ident = expect_ident();
   Function *func = calloc(1, sizeof(Function));
