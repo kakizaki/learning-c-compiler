@@ -4,7 +4,6 @@
 
 static char *funcname;
 
-
 static void gen_lval(Node *node) {
   if (node->kind != ND_LVAR) {
     error("代入の左辺値が変数ではありません");
@@ -12,9 +11,10 @@ static void gen_lval(Node *node) {
 
   // 変数のアドレスを push
   printf("  mov rax, rbp\n");
-  printf("  sub rax, %d\n", node->offset);
+  printf("  sub rax, %d\n", node->var->offset);
   printf("  push rax\n");
 }
+
 
 
 int publishedLabelCount = 0;
@@ -37,7 +37,7 @@ static void gen(Node *node) {
 
   // 数値
   case ND_NUM:
-    printf("  push %d\n", node->val);
+    printf("  push %d\n", node->value);
     return;
 
   // 変数の値を参照
@@ -65,7 +65,7 @@ static void gen(Node *node) {
       // gen(node->lhs) (gen(ND_DEREF)) はアドレス先の値を push するので処理が異なる (ほしいのはアドレス)
       
     } else {
-    gen_lval(node->lhs);
+      gen_lval(node->lhs);
     }
 
     // 右辺の値を push
@@ -257,6 +257,10 @@ void codegen(Function *program) {
       printf("  mov [rbp-%d], %s\n", v->var->offset, argreg[i]);
       i++;
     }  
+
+    for (VarList *v = f->locals; v && v->var; v = v->next) {
+      printf("#  %s %d \n", v->var->name, v->var->offset);
+    }
 
     for (NodeList *n = f->block; n && n->node; n = n->next) {
       gen(n->node);

@@ -53,6 +53,38 @@ bool at_eof();
 Token *tokenize(char *p);
 
 
+// 変数の型
+typedef struct Type Type;
+
+struct Type {
+  enum { INT, PTR } ty;
+  Type *ptr_to;
+};
+
+
+// ローカル変数
+typedef struct LVar LVar;
+
+struct LVar {
+  char *name;     // 変数の名前
+  int len;        // 名前の長さ
+  int offset;     // RBPからのオフセット
+  Type *type;
+};
+
+typedef struct VarList VarList;
+
+struct VarList {
+  LVar *var;
+  VarList *next;
+};
+
+
+// ローカル変数
+LVar *find_lvar(VarList *l, Token *tok);
+
+
+
 
 // 
 // parse.c : 抽象構文木
@@ -95,8 +127,8 @@ struct Node {
   NodeKind kind;  // ノードの型
   Node *lhs;      // 左辺
   Node *rhs;      // 右辺
-  int val;        // kind が ND_NUM の場合のみ使う
-  int offset;     // kind が ND_LVAR の場合のみ使う
+  int value;        // kind が ND_NUM の場合のみ使う
+  LVar *var;      // kind が ND_LVAR の場合のみ使う
 
 
   // if (cond) trueStatement; else falseStatement;
@@ -121,40 +153,6 @@ struct NodeList {
   Node* node;
   NodeList *next;
 };
-
-
-// 変数の型
-typedef struct Type Type;
-
-struct Type {
-  enum { INT, PTR } ty;
-  Type *ptr_to;
-};
-
-
-// ローカル変数
-typedef struct LVar LVar;
-
-struct LVar {
-  char *name;     // 変数の名前
-  int len;        // 名前の長さ
-  int offset;     // RBPからのオフセット
-  Type *type;
-};
-
-typedef struct VarList VarList;
-
-struct VarList {
-  LVar *var;
-  VarList *next;
-};
-
-
-// ローカル変数
-//LVar *locals;
-//LVar *find_lvar(Token *tok);
-LVar *find_lvar(VarList *l, Token *tok);
-
 
 
 

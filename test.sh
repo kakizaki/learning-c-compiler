@@ -1,9 +1,11 @@
 #!/bin/bash
 cat <<EOF | gcc -xc -c -o tmp2.o -
+#include <stdio.h>
 int ret3() { return 3; }
 int ret5() { return 5; }
 int add(int a, int b) { return a + b; }
 int sub(int a, int b) { return a - b; }
+int printInt(int a) { printf("%x\n", a); return a; }
 EOF
 
 try() {
@@ -23,6 +25,19 @@ try() {
   fi
 }
 
+
+dryrun() {
+  input="$1"
+
+  ./9cc "$input" > tmp.s
+  gcc -o tmp tmp.s tmp2.o
+  ./tmp
+  actual="$?"
+
+  echo "$input => $actual"
+}
+
+
 << COMMENTOUT
 try 1 'main() {1;}'
 try 1 'main() {a=1;if(1)a;1;}'
@@ -30,7 +45,6 @@ try 1 'main() {a=1;if(1)2;a;}'
 try 1 'main() {a=1;if(0)2;a;}'
 try 1 'main() {a=1;{if(0)2;}a;}'
 COMMENTOUT
-
 
 
 try 0 'int main() {return 0;}'
@@ -160,7 +174,7 @@ try 55 'int main() { return fib(9);} int fib(int x) { if (x<=1) return 1; return
 #
 echo "### & , * "
 try 1 'int main() { int a;int b;a = 1; b = &a; return *b; }'
-try 3 'int main() { int a;int b;int c;a = 3; b = 5; c = &b + 8; return *c; }'
+try 3 'int main() { int a;int b;int c;a = 3; b = 5; c = &b - 8; return *c; }'
 try 4 'int main() { int a;int b;a = 3; b = 1 + *(&a); return b; }'
 
 try 3 'int main() {int a;a=3;return *&a;}'
@@ -168,5 +182,12 @@ try 0 'int main() {int *a;int **b;int ***c; return 0;}'
 
 try 1 'int main() {int a;int *b;a = 1;b = &a;return *b;}'
 try 3 'int main() {int a;int *b;b = &a; *b = 3;return a;}'
+
+try 7 'int main() {int a;int b;a=3;b=5;*(&a+8)=7;return b;}'
+try 2 'int main() {int a;int b;int *c;c=&a;*(c+8)=2;return b;}'
+
+# スタックに確保した変数のアドレスが、確保した順に昇順になるようにする
+dryrun 'int main() {int a;int b;printInt(&a);printInt(&b);return 1;}'
+try 1 'int main() {int a;int b; return &a < &b;}'
 
 echo OK

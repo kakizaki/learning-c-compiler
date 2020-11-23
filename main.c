@@ -17,7 +17,6 @@ LVar *find_lvar(VarList *list, Token *tok) {
   return NULL;
 }
 
-
 // --- main ---
 //
 int main(int argc, char **argv) {

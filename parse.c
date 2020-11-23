@@ -1,7 +1,6 @@
 #include "9cc.h"
 
 static VarList *localVarList = NULL;
-static int stackSize = 0;
 
 
 static Node *new_node(NodeKind kind) {
@@ -21,7 +20,7 @@ static Node *new_node_binary(NodeKind kind, Node *lhs, Node *rhs) {
 
 static Node *new_node_num(int val) {
   Node *node = new_node(ND_NUM);
-  node->val = val;
+  node->value = val;
   return node;
 }
 
@@ -34,23 +33,37 @@ static char* copyString(const char* s, int len) {
 }
 
 
+// 既存の変数があればその変数を返す、なければ新しい変数を追加して返す
 static LVar *existsOrNewVariable(Token *t) {
   LVar *l = find_lvar(localVarList, t);
   if (l != NULL) {
     return l;
   }
 
-  stackSize += 8;
   l = calloc(1, sizeof(LVar));
   l->name = copyString(t->str, t->len);
   l->len = t->len;
-  l->offset = stackSize;
 
+  // 新しい変数を先頭に追加
   VarList *v = calloc(1, sizeof(VarList));
   v->var = l;
   v->next = localVarList;
   localVarList = v;
   return l;
+}
+
+
+// ローカル変数のオフセットを再計算
+static int updateVariableOffset(VarList *list) {
+  // 新しいものが先頭にあり、その順にオフセットをセットする
+  //   オフセットが小さいほうがアドレスとしては大きい値になる (スタックを使用する方向)
+  //   変数の定義順にアドレスが大きい値となる
+  int offset = 0;
+  for (VarList *v = list; v; v = v->next) {
+    offset += 8;
+    v->var->offset = offset;
+  }
+  return offset;
 }
 
 
@@ -78,7 +91,6 @@ Function *program() {
 // function = 'int' ident func-params? "{" statement* "}"
 Function* function() {
   localVarList = NULL;
-  stackSize = 0;
 
   expect_token(TK_INT);
 
@@ -99,7 +111,7 @@ Function* function() {
 
   func->block = head.next;
   func->locals = localVarList;
-  func->stackSize = stackSize;
+  func->stackSize = updateVariableOffset(localVarList);
   return func;
 }
 
@@ -363,7 +375,7 @@ Node *primary() {
     LVar *v = existsOrNewVariable(ident);
     v->type = t;
     Node *node = new_node(ND_LVAR);
-    node->offset = v->offset;
+    node->var = v;
     return node;
   } 
 
@@ -381,7 +393,7 @@ Node *primary() {
         if (v == NULL) {
             error_at(ident->str, "定義されていない変数を使用しました");
         }
-        node->offset = v->offset;
+        node->var = v;
         return node;
       }
     }
