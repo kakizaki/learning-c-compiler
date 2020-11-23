@@ -123,13 +123,23 @@ struct NodeList {
 };
 
 
-// ローカル変数の型
+// 変数の型
+typedef struct Type Type;
+
+struct Type {
+  enum { INT, PTR } ty;
+  Type *ptr_to;
+};
+
+
+// ローカル変数
 typedef struct LVar LVar;
 
 struct LVar {
   char *name;     // 変数の名前
   int len;        // 名前の長さ
   int offset;     // RBPからのオフセット
+  Type *type;
 };
 
 typedef struct VarList VarList;

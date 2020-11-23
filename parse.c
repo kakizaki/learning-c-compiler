@@ -339,7 +339,7 @@ NodeList *funcArgs() {
 
 
 // primary = num 
-//        | 'int' ident
+//        | 'int' ('*')* ident
 //        | indent func-args?
 //        | '(' expression ')'
 Node *primary() {
@@ -350,8 +350,18 @@ Node *primary() {
   }
 
   if (consume_token(TK_INT)) {
+    Type *t = calloc(1, sizeof(Type));
+    t->ty = INT;
+    while (consume_reserved("*")) {
+      Type *ptr = calloc(1, sizeof(Type));
+      ptr->ty = PTR;
+      ptr->ptr_to = t;
+      t = ptr;
+    }
+
     Token *ident = expect_ident();
     LVar *v = existsOrNewVariable(ident);
+    v->type = t;
     Node *node = new_node(ND_LVAR);
     node->offset = v->offset;
     return node;

@@ -162,4 +162,11 @@ echo "### & , * "
 try 1 'int main() { int a;int b;a = 1; b = &a; return *b; }'
 try 3 'int main() { int a;int b;int c;a = 3; b = 5; c = &b + 8; return *c; }'
 try 4 'int main() { int a;int b;a = 3; b = 1 + *(&a); return b; }'
+
+try 3 'int main() {int a;a=3;return *&a;}'
+try 0 'int main() {int *a;int **b;int ***c; return 0;}'
+
+try 1 'int main() {int a;int *b;a = 1;b = &a;return *b;}'
+try 3 'int main() {int a;int *b;b = &a; *b = 3;return a;}'
+
 echo OK

@@ -54,7 +54,19 @@ static void gen(Node *node) {
   // 変数へ代入
   case ND_ASSIGN:
     // 変数のアドレスを push
+    if (node->lhs->kind == ND_DEREF) {
+      gen(node->lhs->lhs);
+
+      // node->lhs->lhs が変数だけなら以下でいいが、*(a+8) もあるので gen に流す
+      //    gen_lval(node->lhs->lhs);
+      //    printf("  pop rax\n");
+      //    printf("  mov rax, [rax]\n");
+      //    printf("  push rax\n")
+      // gen(node->lhs) (gen(ND_DEREF)) はアドレス先の値を push するので処理が異なる (ほしいのはアドレス)
+      
+    } else {
     gen_lval(node->lhs);
+    }
 
     // 右辺の値を push
     gen(node->rhs);
