@@ -33,15 +33,11 @@ static char* copyString(const char* s, int len) {
 }
 
 
-// 既存の変数があればその変数を返す、なければ新しい変数を追加して返す
-static LVar *existsOrNewVariable(Token *t) {
-  LVar *l = find_lvar(localVarList, t);
-  if (l != NULL) {
-    return l;
-  }
-
-  l = calloc(1, sizeof(LVar));
+// 新しい変数を追加して返す
+static LVar *newVariable(Token *t, Type *type) {
+  LVar *l = calloc(1, sizeof(LVar));
   l->name = copyString(t->str, t->len);
+  l->type = type;
   l->len = t->len;
 
   // 新しい変数を先頭に追加
@@ -51,6 +47,7 @@ static LVar *existsOrNewVariable(Token *t) {
   localVarList = v;
   return l;
 }
+
 
 
 // ローカル変数のオフセットを再計算
@@ -116,6 +113,35 @@ Function* function() {
 }
 
 
+static LVar *new_variable_or_null() {
+  Type *t = NULL;
+
+  // 
+  if (consume_token(TK_INT)) {
+    t = calloc(1, sizeof(Type));
+    t->kind = TY_INT;
+  }
+  if (t == NULL) {
+    return NULL;
+  }
+
+  // ポインタ
+  while (consume_reserved("*")) {
+    Type *ptr = calloc(1, sizeof(Type));
+    ptr->kind = TY_PTR;
+    ptr->ptr_to = t;
+    t = ptr;
+  }
+
+  Token *ident = expect_ident();
+  if (find_lvar(localVarList, ident) != NULL) {
+    error_at(ident->str, "すでに定義されています");
+  }
+  LVar *v = newVariable(ident, t);
+  return v;
+}
+
+
 // func-params = '(' ( 'int' ident (',' 'int' ident)* )?  ')'
 VarList *funcParams() {
   expect("(");
@@ -123,21 +149,24 @@ VarList *funcParams() {
     return NULL;
   }
 
-  expect_token(TK_INT);
-  Token *ident = expect_ident();
+  LVar *v = new_variable_or_null();
+  if (v == NULL) {
+    error_current_token("変数定義に誤りがあります");
+  }
   VarList *head = calloc(1, sizeof(VarList));
-  head->var = existsOrNewVariable(ident);
+  head->var = v;
 
   VarList *cur = head;
   while (consume_reserved(",")) {
-    expect_token(TK_INT);
-    ident = expect_ident();
-    VarList *l = calloc(1, sizeof(VarList));
-    l->var = existsOrNewVariable(ident);
-  
-    cur->next = l;
-    cur = l;
-  } 
+    v = new_variable_or_null();
+    if (v == NULL) {
+      error_current_token("変数定義に誤りがあります");
+    }
+
+    cur->next = calloc(1, sizeof(VarList));
+    cur->next->var = v;
+    cur = cur->next;
+  }
   expect(")");
   return head;
 }
@@ -165,6 +194,7 @@ Node *statement() {
 
     node = new_node(ND_BLOCK);
     node->block = head.next;
+    updateType(node);
     return node;
   }
 
@@ -181,6 +211,7 @@ Node *statement() {
       node->kind = ND_IF_ELSE;
       node->falseStatement = statement();
     }
+    updateType(node);
     return node;
   }
 
@@ -192,6 +223,7 @@ Node *statement() {
     expect(")");
 
     node->trueStatement = statement();
+    updateType(node);
     return node;
   }
 
@@ -221,6 +253,7 @@ Node *statement() {
     }
 
     node->trueStatement = statement();
+    updateType(node);
     return node;
   }
 
@@ -233,6 +266,7 @@ Node *statement() {
   }
 
   expect(";");
+  updateType(node);
   return node;
 }
 
@@ -298,15 +332,53 @@ Node *relational() {
 }
 
 
+static Node* new_add(Node *lhs, Node *rhs) {
+  updateType(lhs);
+  updateType(rhs);
+  
+  if (lhs->evalType->kind == TY_INT && rhs->evalType->kind == TY_INT) {
+    return new_node_binary(ND_ADD, lhs, rhs);
+  }
+  if (lhs->evalType->ptr_to != NULL && rhs->evalType->kind == TY_INT) {
+    return new_node_binary(ND_PTR_ADD, lhs, rhs);
+  }
+  if (rhs->evalType->ptr_to != NULL && lhs->evalType->kind == TY_INT) {
+    // HACK 左辺と右辺を入れ替え
+    return new_node_binary(ND_PTR_ADD, rhs, lhs);
+  }
+  error_current_token("invalid operands");
+}
+
+
+static Node* new_sub(Node *lhs, Node *rhs) {
+  updateType(lhs);
+  updateType(rhs);
+
+  if (lhs->evalType->kind == TY_INT && rhs->evalType->kind == TY_INT) {
+    return new_node_binary(ND_SUB, lhs, rhs);
+  }
+  if (lhs->evalType->ptr_to != NULL && rhs->evalType->kind == TY_INT) {
+    return new_node_binary(ND_PTR_SUB, lhs, rhs);
+  }
+  if (lhs->evalType->ptr_to != NULL && rhs->evalType->ptr_to != NULL) {
+    return new_node_binary(ND_PTR_DIFF, lhs, rhs);
+  }
+  error_current_token("invalid operands");
+}
+
+
+
 // add = mul ('+' mul | '-' mul)*
 Node *add() {
   Node *node = mul();
 
   for (;;) {
-    if (consume_reserved("+")) 
-      node = new_node_binary(ND_ADD, node, mul());
-    else if (consume_reserved("-"))
-      node = new_node_binary(ND_SUB, node, mul());
+    if (consume_reserved("+")) {
+      node = new_add(node, mul());
+    }
+    else if (consume_reserved("-")) {
+      node = new_sub(node, mul());
+    }
     else
       return node; 
   }
@@ -361,23 +433,14 @@ Node *primary() {
     return node;
   }
 
-  if (consume_token(TK_INT)) {
-    Type *t = calloc(1, sizeof(Type));
-    t->ty = INT;
-    while (consume_reserved("*")) {
-      Type *ptr = calloc(1, sizeof(Type));
-      ptr->ty = PTR;
-      ptr->ptr_to = t;
-      t = ptr;
+  {
+    LVar *v = new_variable_or_null();
+    if (v != NULL) {
+      Node *node = new_node(ND_LVAR);
+      node->var = v;
+      return node;
     }
-
-    Token *ident = expect_ident();
-    LVar *v = existsOrNewVariable(ident);
-    v->type = t;
-    Node *node = new_node(ND_LVAR);
-    node->var = v;
-    return node;
-  } 
+  }
 
   {
     Token *ident = consume_ident();

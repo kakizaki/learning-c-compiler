@@ -174,7 +174,7 @@ try 55 'int main() { return fib(9);} int fib(int x) { if (x<=1) return 1; return
 #
 echo "### & , * "
 try 1 'int main() { int a;int b;a = 1; b = &a; return *b; }'
-try 3 'int main() { int a;int b;int c;a = 3; b = 5; c = &b - 8; return *c; }'
+try 3 'int main() { int a;int b;int c;a = 3; b = 5; c = &b - 1; return *c; }'
 try 4 'int main() { int a;int b;a = 3; b = 1 + *(&a); return b; }'
 
 try 3 'int main() {int a;a=3;return *&a;}'
@@ -183,11 +183,19 @@ try 0 'int main() {int *a;int **b;int ***c; return 0;}'
 try 1 'int main() {int a;int *b;a = 1;b = &a;return *b;}'
 try 3 'int main() {int a;int *b;b = &a; *b = 3;return a;}'
 
-try 7 'int main() {int a;int b;a=3;b=5;*(&a+8)=7;return b;}'
-try 2 'int main() {int a;int b;int *c;c=&a;*(c+8)=2;return b;}'
+try 7 'int main() {int a;int b;a=3;b=5;*(&a+1)=7;return b;}'
+try 2 'int main() {int a;int b;int *c;c=&a;*(c+1)=2;return b;}'
 
 # スタックに確保した変数のアドレスが、確保した順に昇順になるようにする
 dryrun 'int main() {int a;int b;printInt(&a);printInt(&b);return 1;}'
 try 1 'int main() {int a;int b; return &a < &b;}'
+
+#
+echo "### pointer arithmetic "
+try 5 'int main() { int x=3; int y=5; return *(&x+1); }'
+try 3 'int main() { int x=3; int y=5; return *(&y-1); }'
+try 7 'int main() { int x=3; int y=5; *(&x+1)=7; return y; }'
+try 7 'int main() { int x=3; int y=5; *(&y-1)=7; return x; }'
+try 2 'int main() { int x; return (&x+2)-&x; }'
 
 echo OK

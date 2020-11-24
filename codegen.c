@@ -230,6 +230,20 @@ static void gen(Node *node) {
     printf("  cqo\n");
     printf("  idiv rdi\n");
     break;
+  case ND_PTR_ADD:
+    printf("  imul rdi, 8\n");
+    printf("  add rax, rdi\n");
+    break;
+  case ND_PTR_SUB:
+    printf("  imul rdi, 8\n");
+    printf("  sub rax, rdi\n");
+    break;
+  case ND_PTR_DIFF:
+    printf("  sub rax, rdi\n");
+    printf("  cqo\n");
+    printf("  mov rdi, 8\n");
+    printf("  idiv rdi\n");
+    break;
   }
 
   printf("  push rax\n");

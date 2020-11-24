@@ -37,6 +37,7 @@ struct Token {
 //
 void error(char *fmt, ...);
 void error_at(char *loc, char *fmt, ...);
+void error_current_token(char *fmt, ...);
 
 void expect(char *op);
 void expect_token(TokenKind t);
@@ -54,10 +55,11 @@ Token *tokenize(char *p);
 
 
 // 変数の型
+typedef enum { TY_INT, TY_PTR } TypeKind;
 typedef struct Type Type;
 
 struct Type {
-  enum { INT, PTR } ty;
+  TypeKind kind;
   Type *ptr_to;
 };
 
@@ -98,6 +100,10 @@ typedef enum {
   ND_DIV, // /
   ND_NUM, // 整数
 
+  ND_PTR_ADD,
+  ND_PTR_SUB,
+  ND_PTR_DIFF,
+
   ND_EQ,  // ==
   ND_NE,  // !=
   ND_LT,  // <
@@ -125,10 +131,12 @@ typedef struct NodeList NodeList;
 // 抽象構文木のノードの型
 struct Node {
   NodeKind kind;  // ノードの型
+  Type *evalType;       // 演算結果の値の型
   Node *lhs;      // 左辺
   Node *rhs;      // 右辺
   int value;        // kind が ND_NUM の場合のみ使う
   LVar *var;      // kind が ND_LVAR の場合のみ使う
+
 
 
   // if (cond) trueStatement; else falseStatement;
@@ -188,6 +196,13 @@ Node *add();
 Node *mul();
 Node *unary();
 Node *primary();
+
+
+//
+// type.c
+// 
+bool isInteger(Type* t);
+void updateType(Node *node);
 
 
 

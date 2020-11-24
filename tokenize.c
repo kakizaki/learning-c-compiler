@@ -26,6 +26,19 @@ void error_at(char *loc, char *fmt, ...) {
 }
 
 
+void error_current_token(char *fmt, ...) {
+  va_list ap;
+  va_start(ap, fmt);
+
+  int pos = token->str - user_input;
+  fprintf(stderr, "%s\n", user_input);
+  fprintf(stderr, "%*s", pos, "");
+  fprintf(stderr, "^ ");
+  vfprintf(stderr, fmt, ap);
+  fprintf(stderr, "\n");
+  exit(1);
+}
+
 // 現在のトークンが期待する記号だった場合に、次のトークンへ移動する 
 void expect(char *op) {
   if (token->kind != TK_RESERVED 
