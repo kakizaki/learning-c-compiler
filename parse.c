@@ -466,11 +466,24 @@ Node *primary() {
 }
 
 
-// unary =  '+'? primary
+// unary = 'sizeof' unary
+//        | '+'? primary
 //        | '-'? primary
 //        | '&' unary
 //        | '*' unary
 Node *unary() {
+  if (consume_token(TK_SIZEOF)) {
+    Node *node = unary();
+    updateType(node);
+
+    if (node->evalType->kind == TY_PTR) {
+      node = new_node_num(8);
+    } else {
+      node = new_node_num(4);
+    }
+    return node;
+  }
+
   if (consume_reserved("&")) {
     Node *node = new_node(ND_ADDR);
     node->lhs = unary();

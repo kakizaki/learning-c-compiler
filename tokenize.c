@@ -290,6 +290,13 @@ Token *tokenize(char *p) {
       continue;
     }
 
+    length = 6;
+    if (is_reserved(p, "sizeof", length)) {
+      cur = new_token(TK_SIZEOF, cur, p, length);
+      p += length;
+      continue;
+    }
+
     length = countWordLength(p);
     if (0 < length) {
       cur = new_token(TK_IDENT, cur, p, length);

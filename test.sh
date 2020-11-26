@@ -46,7 +46,6 @@ try 1 'main() {a=1;if(0)2;a;}'
 try 1 'main() {a=1;{if(0)2;}a;}'
 COMMENTOUT
 
-
 try 0 'int main() {return 0;}'
 try 42 'int main() {return 42;}'
 
@@ -197,5 +196,14 @@ try 3 'int main() { int x=3; int y=5; return *(&y-1); }'
 try 7 'int main() { int x=3; int y=5; *(&x+1)=7; return y; }'
 try 7 'int main() { int x=3; int y=5; *(&y-1)=7; return x; }'
 try 2 'int main() { int x; return (&x+2)-&x; }'
+
+#
+echo "### sizeof"
+try 4 'int main() { int a; return sizeof(a); }'
+try 8 'int main() { int *a; return sizeof(a); }'
+try 4 'int main() { return sizeof(1); }'
+try 4 'int main() { return sizeof(sizeof(1)); }'
+try 8 'int main() { int a;return sizeof(&a+1); }'
+
 
 echo OK
