@@ -97,7 +97,7 @@ static bool isVariableName(char p) {
   return isVariableNameHead(p) || '0' <= p && p <= '9';
 }
 
-static int countWordLength(char *p) {
+static int getIdentWord(char *p) {
   int len = 0;
 
   if (isVariableNameHead(*p)) {
@@ -226,6 +226,7 @@ Token *tokenize(char *p) {
   head.next = NULL;
   Token *cur = &head;
   int length = 0;
+  char* word = "";
 
   while (*p) {
     if (isspace(*p)) {
@@ -248,56 +249,63 @@ Token *tokenize(char *p) {
        continue;
     }
 
-    length = 6;
-    if (is_reserved(p, "return", length)) {
+    word = "return";
+    length = strlen(word);
+    if (is_reserved(p, word, length)) {
       cur = new_token(TK_RETURN, cur, p, length);
       p += length;
       continue;
     }
 
-    length = 2;
-    if (is_reserved(p, "if", length)) {
+    word = "if";
+    length = strlen(word);
+    if (is_reserved(p, word, length)) {
       cur = new_token(TK_IF, cur, p, length);
       p += length;
       continue;
     }
 
-    length = 4;
-    if (is_reserved(p, "else", length)) {
+    word = "else";
+    length = strlen(word);
+    if (is_reserved(p, word, length)) {
       cur = new_token(TK_ELSE, cur, p, length);
       p += length;
       continue;
     }
 
-    length = 5;
-    if (is_reserved(p, "while", length)) {
+    word = "while";
+    length = strlen(word);
+    if (is_reserved(p, word, length)) {
       cur = new_token(TK_WHILE, cur, p, length);
       p += length;
       continue;
     }
 
-    length = 3;
-    if (is_reserved(p, "for", length)) {
+    word = "for";
+    length = strlen(word);
+    if (is_reserved(p, word, length)) {
       cur = new_token(TK_FOR, cur, p, length);
       p += length;
       continue;
     }
 
-    length = 3;
-    if (is_reserved(p, "int", length)) {
+    word = "int";
+    length = strlen(word);
+    if (is_reserved(p, word, length)) {
       cur = new_token(TK_INT, cur, p, length);
       p += length;
       continue;
     }
 
-    length = 6;
-    if (is_reserved(p, "sizeof", length)) {
+    word = "sizeof";
+    length = strlen(word);
+    if (is_reserved(p, word, length)) {
       cur = new_token(TK_SIZEOF, cur, p, length);
       p += length;
       continue;
     }
 
-    length = countWordLength(p);
+    length = getIdentWord(p);
     if (0 < length) {
       cur = new_token(TK_IDENT, cur, p, length);
       p += length;
