@@ -17,9 +17,17 @@ LVar *find_lvar(VarList *list, Token *tok) {
   return NULL;
 }
 
+
+static void test_array_add() {
+  int a[2];
+  printf("# %x, %x, %x\n", a, a+1, &a+1); // 0, +4, +8
+}
+
+
 // --- main ---
 //
 int main(int argc, char **argv) {
+
   if (argc != 2) {
     fprintf(stderr, "引数の個数がただしくありません\n");
     return 1;
@@ -27,10 +35,14 @@ int main(int argc, char **argv) {
 
   //
   user_input = argv[1];
+  
+  printf("# will tokenize\n");
   token = tokenize(argv[1]);
+  
+  printf("# will parse\n");
   Function *mainFunction = program();
 
-  //
+  printf("# will codegen\n");
   codegen(mainFunction);
 
   return 0;

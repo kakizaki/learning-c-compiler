@@ -4,7 +4,8 @@
 
 static char *funcname;
 
-static void gen_lval(Node *node) {
+  // 変数のアドレスを push
+static void push_lval_address(Node *node) {
   if (node->kind != ND_LVAR) {
     error("代入の左辺値が変数ではありません");
   }
@@ -15,6 +16,12 @@ static void gen_lval(Node *node) {
   printf("  push rax\n");
 }
 
+// 変数のアドレスを取り出し、そのアドレスにある値を取り出し、その値を push
+static void push_load_value() {
+  printf("  pop rax\n");
+  printf("  mov rax, [rax]\n");
+  printf("  push rax\n");
+}
 
 
 int publishedLabelCount = 0;
@@ -43,29 +50,30 @@ static void gen(Node *node) {
   // 変数の値を参照
   case ND_LVAR:
     // 変数のアドレスを push
-    gen_lval(node);
+    push_lval_address(node);
 
-    // 変数のアドレスを取り出し、そのアドレスにある値を取り出し、その値を push
-    printf("  pop rax\n");
-    printf("  mov rax, [rax]\n");
-    printf("  push rax\n");
+    // 配列変数はポインタとして扱うため、値を読まず、アドレスのままでいい
+    if (node->var->type->kind != TY_ARRAY) {
+      push_load_value();
+    }
     return;
 
   // 変数へ代入
   case ND_ASSIGN:
     // 変数のアドレスを push
     if (node->lhs->kind == ND_DEREF) {
+      // ND_DEREF なものの指定されたアドレスに値をセットさせるので、アドレス値が期待される
       gen(node->lhs->lhs);
 
       // node->lhs->lhs が変数だけなら以下でいいが、*(a+8) もあるので gen に流す
-      //    gen_lval(node->lhs->lhs);
+      //    push_lval_address(node->lhs->lhs);
       //    printf("  pop rax\n");
       //    printf("  mov rax, [rax]\n");
       //    printf("  push rax\n")
       // gen(node->lhs) (gen(ND_DEREF)) はアドレス先の値を push するので処理が異なる (ほしいのはアドレス)
       
     } else {
-      gen_lval(node->lhs);
+      push_lval_address(node->lhs);
     }
 
     // 右辺の値を push
@@ -178,14 +186,12 @@ static void gen(Node *node) {
     return;
 
   case ND_ADDR:
-    gen_lval(node->lhs);
+    push_lval_address(node->lhs);
     return;
   
   case ND_DEREF:
     gen(node->lhs);
-    printf("  pop rax\n");
-    printf("  mov rax, [rax]\n");
-    printf("  push rax\n");
+    push_load_value();
     return;
   }
 
@@ -231,17 +237,17 @@ static void gen(Node *node) {
     printf("  idiv rdi\n");
     break;
   case ND_PTR_ADD:
-    printf("  imul rdi, 8\n");
+    printf("  imul rdi, %d\n", node->lhs->evalType->ptr_to->size);
     printf("  add rax, rdi\n");
     break;
   case ND_PTR_SUB:
-    printf("  imul rdi, 8\n");
+    printf("  imul rdi, %d\n", node->lhs->evalType->ptr_to->size);
     printf("  sub rax, rdi\n");
     break;
   case ND_PTR_DIFF:
     printf("  sub rax, rdi\n");
     printf("  cqo\n");
-    printf("  mov rdi, 8\n");
+    printf("  mov rdi, %d\n", node->lhs->evalType->ptr_to->size);
     printf("  idiv rdi\n");
     break;
   }
@@ -271,10 +277,6 @@ void codegen(Function *program) {
       printf("  mov [rbp-%d], %s\n", v->var->offset, argreg[i]);
       i++;
     }  
-
-    for (VarList *v = f->locals; v && v->var; v = v->next) {
-      printf("#  %s %d \n", v->var->name, v->var->offset);
-    }
 
     for (NodeList *n = f->block; n && n->node; n = n->next) {
       gen(n->node);

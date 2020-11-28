@@ -46,6 +46,11 @@ try 1 'main() {a=1;if(0)2;a;}'
 try 1 'main() {a=1;{if(0)2;}a;}'
 COMMENTOUT
 
+
+#dryrun 'int main() {int a[2];printInt(a);printInt(a+1);printInt((&a)+1);return 0;}'
+#exit
+
+
 try 0 'int main() {return 0;}'
 try 42 'int main() {return 42;}'
 
@@ -205,5 +210,14 @@ try 4 'int main() { return sizeof(1); }'
 try 4 'int main() { return sizeof(sizeof(1)); }'
 try 8 'int main() { int a;return sizeof(&a+1); }'
 
+#
+echo '### array 1'
+try 4 'int main() {int a[2];*a=1;*(a+1)=3;return *a+*(a+1);}'
+try 3 'int main() {int a[2];*a=1;*(a+1)=2;int *p;return *a+*(a+1);}'
+
+try 3 'int main() {int x[2];int *y=&x; *y=3; return *x; }'
+try 3 'int main() {int x[3]; *x=3; *(x+1)=4; *(x+2)=5; return *x; }'
+try 4 'int main() {int x[3]; *x=3; *(x+1)=4; *(x+2)=5; return *(x+1); }'
+try 5 'int main() {int x[3]; *x=3; *(x+1)=4; *(x+2)=5; return *(x+2); }'
 
 echo OK

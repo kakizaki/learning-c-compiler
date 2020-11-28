@@ -1,14 +1,34 @@
 #include "9cc.h"
 
-Type *int_type = &(Type) { TY_INT };
+static Type *int_type;
 
 
-static Type *pointerTo(Type *t) {
+Type *type_int() {
+    if (int_type == NULL) {
+        int_type = calloc(1, sizeof(Type));
+        int_type->kind = TY_INT;
+        int_type->size = 8;
+    }
+    return int_type;
+}
+
+Type *type_pointer_to(Type *t) {
     Type *p = calloc(1, sizeof(Type));
     p->kind = TY_PTR;
+    p->size = 8;
     p->ptr_to = t;
     return p;
 }
+
+Type *type_array_to(Type *t, int array_size) {
+    Type *p = calloc(1, sizeof(Type));
+    p->kind = TY_ARRAY;
+    p->size = t->size * array_size;
+    p->array_size = array_size;
+    p->ptr_to = t;
+    return p;
+}
+
 
 bool isInteger(Type *t) {
     return t->kind == TY_INT;
@@ -46,7 +66,7 @@ void updateType(Node *node) {
     case ND_LE:
     case ND_FUNC_CALL:
     case ND_NUM:
-        node->evalType = int_type;
+        node->evalType = type_int();
         return;
     case ND_LVAR:
         node->evalType = node->var->type;
@@ -57,10 +77,10 @@ void updateType(Node *node) {
         node->evalType = node->lhs->evalType;
         return;
     case ND_ADDR:
-        node->evalType = pointerTo(node->lhs->evalType);
+        node->evalType = type_pointer_to(node->lhs->evalType);
         return;
     case ND_DEREF:
-        if (node->lhs->evalType->kind == TY_PTR) {
+        if (node->lhs->evalType->ptr_to != NULL) {
             node->evalType = node->lhs->evalType->ptr_to;
         } else {
             node->evalType = node->lhs->evalType;

@@ -46,6 +46,8 @@ int expect_number();
 Token *expect_ident();
 
 bool confirm_reserved(char *op);
+bool confirm_token(TokenKind t);
+
 bool consume_reserved(char *op);
 bool consume_token(TokenKind t);
 Token *consume_ident();
@@ -56,12 +58,14 @@ Token *tokenize(char *p);
 
 
 // 変数の型
-typedef enum { TY_INT, TY_PTR } TypeKind;
+typedef enum { TY_INT, TY_PTR, TY_ARRAY } TypeKind;
 typedef struct Type Type;
 
 struct Type {
   TypeKind kind;
+  int size;
   Type *ptr_to;
+  size_t array_size;
 };
 
 
@@ -186,9 +190,13 @@ struct Program {
 
 Function* program();
 Function* function();
-VarList *funcParams();
-NodeList *funcArgs();
+
+VarList *function_param_list();
+LVar *function_param();
+NodeList *function_arg_list();
+
 Node *statement();
+Node *declaration();
 Node *expression();
 Node *assign();
 Node *equality();
@@ -202,6 +210,9 @@ Node *primary();
 //
 // type.c
 // 
+Type *type_int();
+Type *type_pointer_to(Type *base);
+Type *type_array_to(Type *base, int array_size);
 bool isInteger(Type* t);
 void updateType(Node *node);
 

@@ -130,20 +130,13 @@ static bool is_reserved(const char* p, const char* word, int len) {
 
 static bool is_reserved_char(const char p) {
     if (
-      p == '<' 
-    || p == '>'
-    || p == '+' 
-    || p == '-' 
-    || p == '*' 
-    || p == '/'
-    || p == '('
-    || p == ')'
-    || p == ';'
-    || p == '='
-    || p == '{'
-    || p == '}'
-    || p == ','
-    || p == '&'
+      p == '<' || p == '>'
+    || p == '+' || p == '-' || p == '*' || p == '/'
+    || p == '(' || p == ')'
+    || p == '{' || p == '}'
+    || p == '[' || p == ']'
+    || p == ';' || p == '='
+    || p == ',' || p == '&'
     ) {
       return true;
     }
@@ -162,6 +155,17 @@ bool confirm_reserved(char *op) {
   }
   return true;
 }
+
+
+// 現在のトークンが期待する種類かどうか確認する
+// 結果を返す
+bool confirm_token(TokenKind t) {
+  if (token->kind == t) {
+    return true;
+  }
+  return false;
+}
+
 
 
 // 現在のトークンが期待する記号だった場合に、次のトークンへ移動する

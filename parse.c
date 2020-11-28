@@ -3,6 +3,15 @@
 static VarList *localVarList = NULL;
 
 
+static bool confirm_type_token() {
+  if (confirm_token(TK_INT)) {
+    return true;
+  }
+
+  return false;
+}
+
+
 static Node *new_node(NodeKind kind) {
   Node *node = calloc(1, sizeof(Node));
   node->kind = kind;
@@ -57,7 +66,7 @@ static int updateVariableOffset(VarList *list) {
   //   変数の定義順にアドレスが大きい値となる
   int offset = 0;
   for (VarList *v = list; v; v = v->next) {
-    offset += 8;
+    offset += v->var->type->size;
     v->var->offset = offset;
   }
   return offset;
@@ -85,7 +94,7 @@ Function *program() {
 }
 
 
-// function = 'int' ident func-params? "{" statement* "}"
+// function = 'int' ident function_param_list "{" statement* "}"
 Function* function() {
   localVarList = NULL;
 
@@ -94,7 +103,7 @@ Function* function() {
   Token *ident = expect_ident();
   Function *func = calloc(1, sizeof(Function));
   func->name = copyString(ident->str, ident->len);
-  func->params = funcParams();
+  func->params = function_param_list();
 
   expect("{");
   NodeList head = { 0, 0 };
@@ -113,23 +122,22 @@ Function* function() {
 }
 
 
-static LVar *new_variable_or_null() {
+// declaration = 'int' ('*')* ident ('[' num ']')? ("=" expression)
+Node *declaration() {
   Type *t = NULL;
 
   // 
   if (consume_token(TK_INT)) {
-    t = calloc(1, sizeof(Type));
-    t->kind = TY_INT;
+    t = type_int();
   }
+
   if (t == NULL) {
-    return NULL;
+    error_current_token("サポートされていない型です");
   }
 
   // ポインタ
   while (consume_reserved("*")) {
-    Type *ptr = calloc(1, sizeof(Type));
-    ptr->kind = TY_PTR;
-    ptr->ptr_to = t;
+    Type *ptr = type_pointer_to(t);
     t = ptr;
   }
 
@@ -137,32 +145,68 @@ static LVar *new_variable_or_null() {
   if (find_lvar(localVarList, ident) != NULL) {
     error_at(ident->str, "すでに定義されています");
   }
+
+  if (consume_reserved("[")) {
+    Type *arr = type_array_to(t, expect_number());
+    t = arr;
+    expect("]");
+  }
+
+  Node *assign = new_node(ND_ASSIGN);
+  assign->lhs = new_node(ND_LVAR);
+  assign->lhs->var = newVariable(ident, t);
+
+  if (consume_reserved("=")) {
+    assign->rhs = expression();
+  }
+  else {
+    assign->rhs = new_node_num(0);
+  }
+  return assign;
+}
+
+
+// function_param = 'int' ('*')* ident
+LVar *function_param() {
+  Type *t = NULL;
+
+  if (consume_token(TK_INT)) {
+    t = type_int();
+  }
+  if (t == NULL) {
+    error_current_token("サポートされていない変数の型です");
+  }
+
+  // ポインタ
+  while (consume_reserved("*")) {
+    Type *ptr = type_pointer_to(t);
+    t = ptr;
+  }
+
+  Token *ident = expect_ident();
+  if (find_lvar(localVarList, ident) != NULL) {
+    error_at(ident->str, "すでに定義されています");
+  }
+
   LVar *v = newVariable(ident, t);
   return v;
 }
 
 
-// func-params = '(' ( 'int' ident (',' 'int' ident)* )?  ')'
-VarList *funcParams() {
+// function_param_list = '(' (function_param (',' function_param)* )?  ')'
+VarList *function_param_list() {
   expect("(");
   if (consume_reserved(")")) {
     return NULL;
   }
 
-  LVar *v = new_variable_or_null();
-  if (v == NULL) {
-    error_current_token("変数定義に誤りがあります");
-  }
+  LVar *v = function_param();
   VarList *head = calloc(1, sizeof(VarList));
   head->var = v;
 
   VarList *cur = head;
   while (consume_reserved(",")) {
-    v = new_variable_or_null();
-    if (v == NULL) {
-      error_current_token("変数定義に誤りがあります");
-    }
-
+    v = function_param();
     cur->next = calloc(1, sizeof(VarList));
     cur->next->var = v;
     cur = cur->next;
@@ -174,6 +218,7 @@ VarList *funcParams() {
 
 
 // statement = expression ";" 
+//          | declaration ";"
 //          | "{" statement* "}"
 //          | "if" "(" expression ")" statement ("else" statement)?
 //          | "while" "(" expression ")" statement
@@ -261,10 +306,19 @@ Node *statement() {
   if (consume_token(TK_RETURN)) {
     node = new_node(ND_RETURN);
     node->lhs = expression();
-  } else {
-    node = expression();
+    expect(";");
+    updateType(node);
+    return node;
   }
 
+  if (confirm_type_token()) {
+    node = declaration();
+    expect(";");
+    updateType(node);
+    return node;
+  }
+
+  node = expression();
   expect(";");
   updateType(node);
   return node;
@@ -400,8 +454,8 @@ Node *mul() {
 }
 
 
-// func-args = '(' ( assign (',' assign)* )?  ')'
-NodeList *funcArgs() {
+// function_arg_list = '(' ( assign (',' assign)* )?  ')'
+NodeList *function_arg_list() {
   expect("(");
   if (consume_reserved(")")) {
     return NULL;
@@ -423,8 +477,7 @@ NodeList *funcArgs() {
 
 
 // primary = num 
-//        | 'int' ('*')* ident
-//        | indent func-args?
+//        | indent ( '[' num ']' | function_arg_list )?
 //        | '(' expression ')'
 Node *primary() {
   if (consume_reserved("(")) {
@@ -434,21 +487,12 @@ Node *primary() {
   }
 
   {
-    LVar *v = new_variable_or_null();
-    if (v != NULL) {
-      Node *node = new_node(ND_LVAR);
-      node->var = v;
-      return node;
-    }
-  }
-
-  {
     Token *ident = consume_ident();
     if (ident) {
       if (confirm_reserved("(")) {
         Node *node = new_node(ND_FUNC_CALL);
         node->funcName = copyString(ident->str, ident->len);
-        node->args = funcArgs();
+        node->args = function_arg_list();
         return node;
       } else {
         Node *node = new_node(ND_LVAR);
@@ -457,6 +501,12 @@ Node *primary() {
             error_at(ident->str, "定義されていない変数を使用しました");
         }
         node->var = v;
+
+        // if (v->type->kind == TY_ARRAY) {
+        //   Node *addr = new_node(ND_ADDR);
+        //   addr->lhs = node;
+        //   return addr;
+        // }
         return node;
       }
     }
