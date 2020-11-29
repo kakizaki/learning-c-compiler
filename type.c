@@ -7,6 +7,7 @@ Type *type_int() {
     if (int_type == NULL) {
         int_type = calloc(1, sizeof(Type));
         int_type->kind = TY_INT;
+        int_type->size_of_kind = 4;
         int_type->size = 8;
     }
     return int_type;
@@ -15,16 +16,18 @@ Type *type_int() {
 Type *type_pointer_to(Type *t) {
     Type *p = calloc(1, sizeof(Type));
     p->kind = TY_PTR;
+    p->size_of_kind = 8;
     p->size = 8;
     p->ptr_to = t;
     return p;
 }
 
-Type *type_array_to(Type *t, int array_size) {
+Type *type_array_to(Type *t, int length) {
     Type *p = calloc(1, sizeof(Type));
     p->kind = TY_ARRAY;
-    p->size = t->size * array_size;
-    p->array_size = array_size;
+    p->size_of_kind = t->size_of_kind * length;
+    p->size = t->size * length;
+    p->array_length = length;
     p->ptr_to = t;
     return p;
 }

@@ -72,9 +72,10 @@ typedef struct Type Type;
 
 struct Type {
   TypeKind kind;
-  int size;
+  int size_of_kind;   // 型のサイズ
+  int size;           // パディング込みのサイズ
   Type *ptr_to;
-  size_t array_size;
+  size_t array_length;
 };
 
 
@@ -224,7 +225,7 @@ Node *primary();
 // 
 Type *type_int();
 Type *type_pointer_to(Type *base);
-Type *type_array_to(Type *base, int array_size);
+Type *type_array_to(Type *base, int length);
 bool isInteger(Type* t);
 void updateType(Node *node);
 

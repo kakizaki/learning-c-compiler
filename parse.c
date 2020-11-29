@@ -494,11 +494,7 @@ Node *unary() {
     Node *node = unary();
     updateType(node);
 
-    if (node->evalType->kind == TY_PTR) {
-      node = new_node_num(8);
-    } else {
-      node = new_node_num(4);
-    }
+    node = new_node_num(node->evalType->size);
     return node;
   }
 

@@ -208,10 +208,14 @@ try 2 'int main() { int x; return (&x+2)-&x; }'
 
 #
 echo "### sizeof"
-try 4 'int main() { int a; return sizeof(a); }'
+# 現状、パディングありのため int は 8 バイト扱い
+#try 4 'int main() { int a; return sizeof(a); }'
+try 8 'int main() { int a; return sizeof(a); }'
 try 8 'int main() { int *a; return sizeof(a); }'
-try 4 'int main() { return sizeof(1); }'
-try 4 'int main() { return sizeof(sizeof(1)); }'
+#try 4 'int main() { return sizeof(1); }'
+try 8 'int main() { return sizeof(1); }'
+#try 4 'int main() { return sizeof(sizeof(1)); }'
+try 8 'int main() { return sizeof(sizeof(1)); }'
 try 8 'int main() { int a;return sizeof(&a+1); }'
 
 #
@@ -232,5 +236,10 @@ try 1 'int main() {int a[2];int i;a[0+1]=1;return a[1];}'
 try 1 'int main() {int a[2];int i=1;a[i]=1;return a[1];}'
 try 1 'int main() {int a[2];int i1=0;int i2=1;a[i1+i2]=1;return a[1];}'
 try 45 'int main() {int a[10];int i=0;int sum=0;for(i=0;i<10;i=i+1) {a[i]=i;sum=sum+a[i];} return sum;}'
+
+#
+echo '### array sizeof'
+# 現状、パディングありのため int は 8 バイト扱い
+try 40 'int main() {int a[5];return sizeof(a);}'
 
 echo OK
