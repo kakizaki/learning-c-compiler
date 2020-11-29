@@ -5,6 +5,9 @@
 #include <stdarg.h>
 #include <stdio.h>
 
+// utility
+char* copy_string(const char* s, int len);
+
 // 
 // tokenize.c : TOKEN
 // 
@@ -57,6 +60,12 @@ bool at_eof();
 Token *tokenize(char *p);
 
 
+
+// 
+// var.c : 変数
+// 
+
+
 // 変数の型
 typedef enum { TY_INT, TY_PTR, TY_ARRAY } TypeKind;
 typedef struct Type Type;
@@ -79,6 +88,7 @@ struct LVar {
   Type *type;
 };
 
+
 typedef struct VarList VarList;
 
 struct VarList {
@@ -86,10 +96,12 @@ struct VarList {
   VarList *next;
 };
 
-
-// ローカル変数
 LVar *find_lvar(VarList *l, Token *tok);
 
+void clear_local_varlist();
+VarList *get_local_varlist();
+LVar *add_local_var(Token *t, Type *type);
+int update_offset_local_varlist();
 
 
 

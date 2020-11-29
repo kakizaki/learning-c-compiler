@@ -1,8 +1,5 @@
 #include "9cc.h"
 
-static VarList *localVarList = NULL;
-
-
 
 static bool confirm_type_token() {
   if (confirm_token(TK_INT)) {
@@ -84,53 +81,6 @@ static Node *new_node_array_indexer(LVar *v, Node *indexer) {
 }
 
 
-
-
-static char* copyString(const char* s, int len) {
-  char* d = malloc(len + 1);
-  strncpy(d, s, len);
-  d[len] = '\0';
-  return d;
-}
-
-
-// 新しい変数を追加して返す
-static LVar *newVariable(Token *t, Type *type) {
-  LVar *l = calloc(1, sizeof(LVar));
-  l->name = copyString(t->str, t->len);
-  l->type = type;
-  l->len = t->len;
-
-  // 新しい変数を先頭に追加
-  VarList *v = calloc(1, sizeof(VarList));
-  v->var = l;
-  v->next = localVarList;
-  localVarList = v;
-  return l;
-}
-
-
-
-// ローカル変数のオフセットを再計算
-static int updateVariableOffset(VarList *list) {
-  // 新しいものが先頭にあり、その順にオフセットをセットする
-  //   オフセットが小さいほうがアドレスとしては大きい値になる (スタックを使用する方向)
-  //   変数の定義順にアドレスが大きい値となる
-  int offset = 0;
-  for (VarList *v = list; v; v = v->next) {
-    offset += v->var->type->size;
-    v->var->offset = offset;
-  }
-  return offset;
-}
-
-
-static LVar *getVariableOrNull(Token *t) {
-  return find_lvar(localVarList, t);
-}
-
-
-
 // program = function*
 Function *program() {
   Function head = {};
@@ -148,13 +98,13 @@ Function *program() {
 
 // function = 'int' ident function_param_list "{" statement* "}"
 Function* function() {
-  localVarList = NULL;
+  clear_local_varlist();
 
   expect_token(TK_INT);
 
   Token *ident = expect_ident();
   Function *func = calloc(1, sizeof(Function));
-  func->name = copyString(ident->str, ident->len);
+  func->name = copy_string(ident->str, ident->len);
   func->params = function_param_list();
 
   expect("{");
@@ -168,8 +118,8 @@ Function* function() {
   }
 
   func->block = head.next;
-  func->locals = localVarList;
-  func->stackSize = updateVariableOffset(localVarList);
+  func->locals = get_local_varlist();
+  func->stackSize = update_offset_local_varlist();
   return func;
 }
 
@@ -195,7 +145,7 @@ Node *declaration() {
   }
 
   Token *ident = expect_ident();
-  if (find_lvar(localVarList, ident) != NULL) {
+  if (find_lvar(get_local_varlist(), ident) != NULL) {
     error_at(ident->str, "すでに定義されています");
   }
 
@@ -206,7 +156,7 @@ Node *declaration() {
   }
 
   Node *assign = new_node(ND_ASSIGN);
-  assign->lhs = new_node_var(newVariable(ident, t));
+  assign->lhs = new_node_var(add_local_var(ident, t));
 
   if (consume_reserved("=")) {
     assign->rhs = expression();
@@ -236,11 +186,11 @@ LVar *function_param() {
   }
 
   Token *ident = expect_ident();
-  if (find_lvar(localVarList, ident) != NULL) {
+  if (find_lvar(get_local_varlist(), ident) != NULL) {
     error_at(ident->str, "すでに定義されています");
   }
 
-  LVar *v = newVariable(ident, t);
+  LVar *v = add_local_var(ident, t);
   return v;
 }
 
@@ -509,12 +459,12 @@ Node *primary() {
   if (ident) {
     if (confirm_reserved("(")) {
       Node *node = new_node(ND_FUNC_CALL);
-      node->funcName = copyString(ident->str, ident->len);
+      node->funcName = copy_string(ident->str, ident->len);
       node->args = function_arg_list();
       return node;
     }
     
-    LVar *v = getVariableOrNull(ident);
+    LVar *v = find_lvar(get_local_varlist(), ident);
     if (v == NULL) {
         error_at(ident->str, "定義されていない変数を使用しました");
     }
