@@ -46,6 +46,10 @@ try 1 'main() {a=1;if(0)2;a;}'
 try 1 'main() {a=1;{if(0)2;}a;}'
 COMMENTOUT
 
+dryrun 'int main() {int a[2];a[0]=1;return a[0];}'
+dryrun 'int main() {int a[2];a[1]=1;return a[1];}'
+dryrun 'int main() {int a[2];a[0]=1;a[1]=2;return a[0]+a[1];}'
+dryrun 'int main() {int a[10];int i=0;int sum=0;for(i=0;i<10;i=i+1) {a[i]=i;sum=sum+a[i];} return sum;}'
 
 #dryrun 'int main() {int a[2];printInt(a);printInt(a+1);printInt((&a)+1);return 0;}'
 #exit
@@ -211,7 +215,7 @@ try 4 'int main() { return sizeof(sizeof(1)); }'
 try 8 'int main() { int a;return sizeof(&a+1); }'
 
 #
-echo '### array 1'
+echo '### array' 
 try 4 'int main() {int a[2];*a=1;*(a+1)=3;return *a+*(a+1);}'
 try 3 'int main() {int a[2];*a=1;*(a+1)=2;int *p;return *a+*(a+1);}'
 
@@ -219,5 +223,14 @@ try 3 'int main() {int x[2];int *y=&x; *y=3; return *x; }'
 try 3 'int main() {int x[3]; *x=3; *(x+1)=4; *(x+2)=5; return *x; }'
 try 4 'int main() {int x[3]; *x=3; *(x+1)=4; *(x+2)=5; return *(x+1); }'
 try 5 'int main() {int x[3]; *x=3; *(x+1)=4; *(x+2)=5; return *(x+2); }'
+
+#
+echo '### array indexer'
+try 1 'int main() {int a[2];int i;a[0]=1;return a[0];}'
+try 1 'int main() {int a[2];int i;a[1]=1;return a[1];}'
+try 1 'int main() {int a[2];int i;a[0+1]=1;return a[1];}'
+try 1 'int main() {int a[2];int i=1;a[i]=1;return a[1];}'
+try 1 'int main() {int a[2];int i1=0;int i2=1;a[i1+i2]=1;return a[1];}'
+try 45 'int main() {int a[10];int i=0;int sum=0;for(i=0;i<10;i=i+1) {a[i]=i;sum=sum+a[i];} return sum;}'
 
 echo OK

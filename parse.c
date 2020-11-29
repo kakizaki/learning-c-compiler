@@ -3,6 +3,7 @@
 static VarList *localVarList = NULL;
 
 
+
 static bool confirm_type_token() {
   if (confirm_token(TK_INT)) {
     return true;
@@ -32,6 +33,57 @@ static Node *new_node_num(int val) {
   node->value = val;
   return node;
 }
+
+
+static Node* new_add(Node *lhs, Node *rhs) {
+  updateType(lhs);
+  updateType(rhs);
+  
+  if (lhs->evalType->kind == TY_INT && rhs->evalType->kind == TY_INT) {
+    return new_node_binary(ND_ADD, lhs, rhs);
+  }
+  if (lhs->evalType->ptr_to != NULL && rhs->evalType->kind == TY_INT) {
+    return new_node_binary(ND_PTR_ADD, lhs, rhs);
+  }
+  if (rhs->evalType->ptr_to != NULL && lhs->evalType->kind == TY_INT) {
+    // HACK 左辺と右辺を入れ替え
+    return new_node_binary(ND_PTR_ADD, rhs, lhs);
+  }
+  error_current_token("invalid operands");
+}
+
+
+static Node* new_sub(Node *lhs, Node *rhs) {
+  updateType(lhs);
+  updateType(rhs);
+
+  if (lhs->evalType->kind == TY_INT && rhs->evalType->kind == TY_INT) {
+    return new_node_binary(ND_SUB, lhs, rhs);
+  }
+  if (lhs->evalType->ptr_to != NULL && rhs->evalType->kind == TY_INT) {
+    return new_node_binary(ND_PTR_SUB, lhs, rhs);
+  }
+  if (lhs->evalType->ptr_to != NULL && rhs->evalType->ptr_to != NULL) {
+    return new_node_binary(ND_PTR_DIFF, lhs, rhs);
+  }
+  error_current_token("invalid operands");
+}
+
+
+static Node *new_node_var(LVar *v) {
+  Node *node = new_node(ND_LVAR);
+  node->var = v;
+  return node;
+}
+
+
+static Node *new_node_array_indexer(LVar *v, Node *indexer) {
+  Node *deref = new_node(ND_DEREF);
+  deref->lhs = new_add(new_node_var(v), indexer);
+  return deref;
+}
+
+
 
 
 static char* copyString(const char* s, int len) {
@@ -122,6 +174,7 @@ Function* function() {
 }
 
 
+// HACK 一次元配列のみ
 // declaration = 'int' ('*')* ident ('[' num ']')? ("=" expression)
 Node *declaration() {
   Type *t = NULL;
@@ -153,8 +206,7 @@ Node *declaration() {
   }
 
   Node *assign = new_node(ND_ASSIGN);
-  assign->lhs = new_node(ND_LVAR);
-  assign->lhs->var = newVariable(ident, t);
+  assign->lhs = new_node_var(newVariable(ident, t));
 
   if (consume_reserved("=")) {
     assign->rhs = expression();
@@ -386,40 +438,6 @@ Node *relational() {
 }
 
 
-static Node* new_add(Node *lhs, Node *rhs) {
-  updateType(lhs);
-  updateType(rhs);
-  
-  if (lhs->evalType->kind == TY_INT && rhs->evalType->kind == TY_INT) {
-    return new_node_binary(ND_ADD, lhs, rhs);
-  }
-  if (lhs->evalType->ptr_to != NULL && rhs->evalType->kind == TY_INT) {
-    return new_node_binary(ND_PTR_ADD, lhs, rhs);
-  }
-  if (rhs->evalType->ptr_to != NULL && lhs->evalType->kind == TY_INT) {
-    // HACK 左辺と右辺を入れ替え
-    return new_node_binary(ND_PTR_ADD, rhs, lhs);
-  }
-  error_current_token("invalid operands");
-}
-
-
-static Node* new_sub(Node *lhs, Node *rhs) {
-  updateType(lhs);
-  updateType(rhs);
-
-  if (lhs->evalType->kind == TY_INT && rhs->evalType->kind == TY_INT) {
-    return new_node_binary(ND_SUB, lhs, rhs);
-  }
-  if (lhs->evalType->ptr_to != NULL && rhs->evalType->kind == TY_INT) {
-    return new_node_binary(ND_PTR_SUB, lhs, rhs);
-  }
-  if (lhs->evalType->ptr_to != NULL && rhs->evalType->ptr_to != NULL) {
-    return new_node_binary(ND_PTR_DIFF, lhs, rhs);
-  }
-  error_current_token("invalid operands");
-}
-
 
 
 // add = mul ('+' mul | '-' mul)*
@@ -476,8 +494,9 @@ NodeList *function_arg_list() {
 }
 
 
+// HACK 配列は一次元のみ
 // primary = num 
-//        | indent ( '[' num ']' | function_arg_list )?
+//        | indent ( '[' expression ']' | function_arg_list )?
 //        | '(' expression ')'
 Node *primary() {
   if (consume_reserved("(")) {
@@ -486,30 +505,29 @@ Node *primary() {
     return node;
   }
 
-  {
-    Token *ident = consume_ident();
-    if (ident) {
-      if (confirm_reserved("(")) {
-        Node *node = new_node(ND_FUNC_CALL);
-        node->funcName = copyString(ident->str, ident->len);
-        node->args = function_arg_list();
-        return node;
-      } else {
-        Node *node = new_node(ND_LVAR);
-        LVar *v = getVariableOrNull(ident);
-        if (v == NULL) {
-            error_at(ident->str, "定義されていない変数を使用しました");
-        }
-        node->var = v;
+  Token *ident = consume_ident();
+  if (ident) {
+    if (confirm_reserved("(")) {
+      Node *node = new_node(ND_FUNC_CALL);
+      node->funcName = copyString(ident->str, ident->len);
+      node->args = function_arg_list();
+      return node;
+    }
+    
+    LVar *v = getVariableOrNull(ident);
+    if (v == NULL) {
+        error_at(ident->str, "定義されていない変数を使用しました");
+    }
 
-        // if (v->type->kind == TY_ARRAY) {
-        //   Node *addr = new_node(ND_ADDR);
-        //   addr->lhs = node;
-        //   return addr;
-        // }
-        return node;
+    if (v->type->kind == TY_ARRAY) {
+      if (consume_reserved("[")) {
+        Node *exp = expression();
+        expect("]");
+        return new_node_array_indexer(v, exp) ;
       }
     }
+
+    return new_node_var(v);
   }
 
   return new_node_num(expect_number());
