@@ -11,9 +11,14 @@ static void push_lval_address(Node *node) {
   }
 
   // 変数のアドレスを push
-  printf("  mov rax, rbp\n");
-  printf("  sub rax, %d\n", node->var->offset);
-  printf("  push rax\n");
+  if (node->var->is_local) {
+    printf("  mov rax, rbp\n");
+    printf("  sub rax, %d\n", node->var->offset);
+    printf("  push rax\n");
+  }
+  else {
+    printf("  push offset %s\n", node->var->name);
+  }
 }
 
 // 変数のアドレスを取り出し、そのアドレスにある値を取り出し、その値を push
@@ -257,10 +262,18 @@ static void gen(Node *node) {
 
 
 
-void codegen(Function *program) {
+void codegen(Program *program) {
   printf(".intel_syntax noprefix\n");
 
-  for (Function *f = program; f; f = f->next) {
+  if (program->global_var != NULL) {
+    printf(".data\n");
+    for (VarList *v = program->global_var; v; v = v->next) {
+      printf("%s:\n", v->var->name);
+      printf("  .zero %d\n", v->var->type->size);
+    }
+  }
+
+  for (Function *f = program->function; f; f = f->next) {
     funcname = f->name;
 
     printf(".global %s\n", f->name);

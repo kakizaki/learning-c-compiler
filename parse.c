@@ -67,43 +67,110 @@ static Node* new_sub(Node *lhs, Node *rhs) {
 }
 
 
-static Node *new_node_var(LVar *v) {
+static Node *new_node_var(Var *v) {
   Node *node = new_node(ND_LVAR);
   node->var = v;
   return node;
 }
 
 
-static Node *new_node_array_indexer(LVar *v, Node *indexer) {
+static Node *new_node_array_indexer(Var *v, Node *indexer) {
   Node *deref = new_node(ND_DEREF);
   deref->lhs = new_add(new_node_var(v), indexer);
   return deref;
 }
 
 
-// program = function*
-Function *program() {
+
+// program = ( function | global_var )*
+Program *program() {
+  clear_global_varlist();
+  Program *p = calloc(1, sizeof(Program));
+
   Function head = {};
-  Function *cur = &head;
+  Function *current_function = &head;
 
   while (!at_eof()) {
-    Function *f = function();
-    cur->next = f;
-    cur = f;
+    Type *t = declaration_type();
+    Token *ident = expect_ident();
+
+    if (confirm_reserved("(")) {
+      Function *f = function2(t, ident);
+      current_function->next = f;
+      current_function = f;
+    } else {
+      global_variable(t, ident);
+    }
   }
 
-  return head.next;
+  p->function = head.next;
+  p->global_var = get_global_varlist();
+  return p;
 }
 
 
-// function = 'int' ident function_param_list "{" statement* "}"
+// declaration_type = 'int' ('*')*
+Type *declaration_type() {
+  Type *t = NULL;
+
+  // 
+  if (consume_token(TK_INT)) {
+    t = type_int();
+  }
+
+  if (t == NULL) {
+    error_current_token("サポートされていない型です");
+  }
+
+  // ポインタ
+  while (consume_reserved("*")) {
+    Type *ptr = type_pointer_to(t);
+    t = ptr;
+  }
+
+  return t;
+}
+
+
+Type *declaration_array(Type *t) {
+  // TODO while ?
+  expect("[");
+  Type *arr = type_array_to(t, expect_number());
+  t = arr;
+  expect("]");
+  return t;
+}
+
+
+Var *global_variable(Type *t, Token *ident) {
+  Var *v = find_var(get_global_varlist(), ident);
+  if (v != NULL) {
+    error_at(ident->str, "すでに定義されています");
+  }
+
+  if (confirm_reserved("[")) {
+    t = declaration_array(t);
+  }
+  expect(";");
+  return add_global_var(ident, t);
+}
+
+
+
+// function = declaration_type ident function_param_list "{" statement* "}"
 Function* function() {
+  Type *return_type = declaration_type();
+  Token *ident = expect_ident();
+  Function *func = function2(return_type, ident);
+  return func;
+}
+
+
+Function* function2(Type *return_type, Token *ident) {
   clear_local_varlist();
 
-  expect_token(TK_INT);
-
-  Token *ident = expect_ident();
   Function *func = calloc(1, sizeof(Function));
+  func->return_type = return_type;
   func->name = copy_string(ident->str, ident->len);
   func->params = function_param_list();
 
@@ -124,19 +191,11 @@ Function* function() {
 }
 
 
+
 // HACK 一次元配列のみ
-// declaration = 'int' ('*')* ident ('[' num ']')? ("=" expression)
+// declaration = declaration_type ident (declaration_array)? ("=" expression)
 Node *declaration() {
-  Type *t = NULL;
-
-  // 
-  if (consume_token(TK_INT)) {
-    t = type_int();
-  }
-
-  if (t == NULL) {
-    error_current_token("サポートされていない型です");
-  }
+  Type *t = declaration_type();
 
   // ポインタ
   while (consume_reserved("*")) {
@@ -145,14 +204,12 @@ Node *declaration() {
   }
 
   Token *ident = expect_ident();
-  if (find_lvar(get_local_varlist(), ident) != NULL) {
+  if (find_var(get_local_varlist(), ident) != NULL) {
     error_at(ident->str, "すでに定義されています");
   }
 
-  if (consume_reserved("[")) {
-    Type *arr = type_array_to(t, expect_number());
-    t = arr;
-    expect("]");
+  if (confirm_reserved("[")) {
+    t = declaration_array(t);
   }
 
   Node *assign = new_node(ND_ASSIGN);
@@ -168,29 +225,16 @@ Node *declaration() {
 }
 
 
-// function_param = 'int' ('*')* ident
-LVar *function_param() {
-  Type *t = NULL;
-
-  if (consume_token(TK_INT)) {
-    t = type_int();
-  }
-  if (t == NULL) {
-    error_current_token("サポートされていない変数の型です");
-  }
-
-  // ポインタ
-  while (consume_reserved("*")) {
-    Type *ptr = type_pointer_to(t);
-    t = ptr;
-  }
+// function_param = declaration_type ident
+Var *function_param() {
+  Type *t = declaration_type();
 
   Token *ident = expect_ident();
-  if (find_lvar(get_local_varlist(), ident) != NULL) {
+  if (find_var(get_local_varlist(), ident) != NULL) {
     error_at(ident->str, "すでに定義されています");
   }
 
-  LVar *v = add_local_var(ident, t);
+  Var *v = add_local_var(ident, t);
   return v;
 }
 
@@ -202,7 +246,7 @@ VarList *function_param_list() {
     return NULL;
   }
 
-  LVar *v = function_param();
+  Var *v = function_param();
   VarList *head = calloc(1, sizeof(VarList));
   head->var = v;
 
@@ -464,9 +508,12 @@ Node *primary() {
       return node;
     }
     
-    LVar *v = find_lvar(get_local_varlist(), ident);
+    Var *v = find_var(get_local_varlist(), ident);
     if (v == NULL) {
+      v = find_var(get_global_varlist(), ident);
+      if (v == NULL) {
         error_at(ident->str, "定義されていない変数を使用しました");
+      }
     }
 
     if (v->type->kind == TY_ARRAY) {

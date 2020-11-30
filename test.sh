@@ -8,12 +8,13 @@ int sub(int a, int b) { return a - b; }
 int printInt(int a) { printf("%x\n", a); return a; }
 EOF
 
+
 try() {
   expected="$1"
   input="$2"
 
   ./9cc "$input" > tmp.s
-  gcc -o tmp tmp.s tmp2.o
+  gcc -static -o tmp tmp.s tmp2.o
   ./tmp
   actual="$?"
 
@@ -27,14 +28,19 @@ try() {
 
 
 dryrun() {
-  input="$1"
+  expected="$1"
+  input="$2"
 
   ./9cc "$input" > tmp.s
-  gcc -o tmp tmp.s tmp2.o
+  gcc -static -o tmp tmp.s tmp2.o
   ./tmp
   actual="$?"
 
-  echo "$input => $actual"
+  if [ "$actual" = "$expected" ]; then
+    echo "$input => $actual"
+  else
+    echo "$expected expected, but got $actual >> $input"
+  fi
 }
 
 
@@ -45,15 +51,6 @@ try 1 'main() {a=1;if(1)2;a;}'
 try 1 'main() {a=1;if(0)2;a;}'
 try 1 'main() {a=1;{if(0)2;}a;}'
 COMMENTOUT
-
-dryrun 'int main() {int a[2];a[0]=1;return a[0];}'
-dryrun 'int main() {int a[2];a[1]=1;return a[1];}'
-dryrun 'int main() {int a[2];a[0]=1;a[1]=2;return a[0]+a[1];}'
-dryrun 'int main() {int a[10];int i=0;int sum=0;for(i=0;i<10;i=i+1) {a[i]=i;sum=sum+a[i];} return sum;}'
-
-#dryrun 'int main() {int a[2];printInt(a);printInt(a+1);printInt((&a)+1);return 0;}'
-#exit
-
 
 try 0 'int main() {return 0;}'
 try 42 'int main() {return 42;}'
@@ -195,7 +192,7 @@ try 7 'int main() {int a;int b;a=3;b=5;*(&a+1)=7;return b;}'
 try 2 'int main() {int a;int b;int *c;c=&a;*(c+1)=2;return b;}'
 
 # スタックに確保した変数のアドレスが、確保した順に昇順になるようにする
-dryrun 'int main() {int a;int b;printInt(&a);printInt(&b);return 1;}'
+dryrun 1 'int main() {int a;int b;printInt(&a);printInt(&b);return 1;}'
 try 1 'int main() {int a;int b; return &a < &b;}'
 
 #
@@ -241,5 +238,24 @@ try 45 'int main() {int a[10];int i=0;int sum=0;for(i=0;i<10;i=i+1) {a[i]=i;sum=
 echo '### array sizeof'
 # 現状、パディングありのため int は 8 バイト扱い
 try 40 'int main() {int a[5];return sizeof(a);}'
+
+
+#
+echo '### global variable'
+try 0 'int x; int main() { return x; }'
+try 3 'int x; int main() { x=3; return x; }'
+try 0 'int x[4]; int main() { x[0]=0; x[1]=1; x[2]=2; x[3]=3; return x[0]; }'
+try 1 'int x[4]; int main() { x[0]=0; x[1]=1; x[2]=2; x[3]=3; return x[1]; }'
+try 2 'int x[4]; int main() { x[0]=0; x[1]=1; x[2]=2; x[3]=3; return x[2]; }'
+try 3 'int x[4]; int main() { x[0]=0; x[1]=1; x[2]=2; x[3]=3; return x[3]; }'
+
+try 8 'int x; int main() { return sizeof(x); }'
+try 32 'int x[4]; int main() { return sizeof(x); }'
+
+try 6 'int a;int main() {int b = 2;a = 3;return a * b;}'
+try 6 'int a;int b;int main() {b = 2;a = 3;return a * b;}'
+try 12 'int a;int main() {a=12;f2();return a;} int f2(){int a=2;return 1;}'
+
+
 
 echo OK

@@ -79,30 +79,38 @@ struct Type {
 };
 
 
-// ローカル変数
-typedef struct LVar LVar;
+// 変数
+typedef struct Var Var;
 
-struct LVar {
+struct Var {
   char *name;     // 変数の名前
   int len;        // 名前の長さ
-  int offset;     // RBPからのオフセット
   Type *type;
+
+  // 
+  bool is_local;
+  int offset;     // RBPからのオフセット
 };
 
 
 typedef struct VarList VarList;
 
 struct VarList {
-  LVar *var;
+  Var *var;
   VarList *next;
 };
 
-LVar *find_lvar(VarList *l, Token *tok);
+Var *find_var(VarList *l, Token *tok);
 
 void clear_local_varlist();
 VarList *get_local_varlist();
-LVar *add_local_var(Token *t, Type *type);
+Var *add_local_var(Token *t, Type *type);
 int update_offset_local_varlist();
+
+void clear_global_varlist();
+VarList *get_global_varlist();
+Var *add_global_var(Token *t, Type *type);
+
 
 
 
@@ -153,8 +161,7 @@ struct Node {
   Node *lhs;      // 左辺
   Node *rhs;      // 右辺
   int value;        // kind が ND_NUM の場合のみ使う
-  LVar *var;      // kind が ND_LVAR の場合のみ使う
-
+  Var *var;      // kind が ND_LVAR の場合のみ使う
 
 
   // if (cond) trueStatement; else falseStatement;
@@ -187,6 +194,8 @@ typedef struct Function Function;
 
 struct Function {
   Function *next;
+
+  Type *return_type;
   char *name;
   VarList *params;
   VarList *locals;
@@ -196,16 +205,24 @@ struct Function {
 
 
 //
+typedef struct Program Program;
 struct Program {
   Function *function;
+  VarList *global_var;
+  NodeList *init_global_var;
 };
 
 
-Function* program();
-Function* function();
+Program *program();
+Function *function();
+Function *function2(Type *return_type, Token *ident);
+
+Type *declaration_type();
+Type *declaration_array(Type *t);
+Var *global_variable(Type *t, Token *ident);
 
 VarList *function_param_list();
-LVar *function_param();
+Var *function_param();
 NodeList *function_arg_list();
 
 Node *statement();
@@ -235,7 +252,7 @@ void updateType(Node *node);
 // codegen.c
 //
 
-void codegen();
+void codegen(Program *p);
 
 
 

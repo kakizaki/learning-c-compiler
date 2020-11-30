@@ -1,8 +1,9 @@
 #include "9cc.h"
 
 
-LVar *find_lvar(VarList *list, Token *tok) {
-  for (VarList *v = list; v && v->var; v = v->next) {
+
+Var *find_var(VarList *list, Token *tok) {
+  for (VarList *v = list; v; v = v->next) {
     if (v->var->len == tok->len && !memcmp(tok->str, v->var->name, v->var->len)) {
       return v->var;
     }
@@ -11,44 +12,76 @@ LVar *find_lvar(VarList *list, Token *tok) {
 }
 
 
-static VarList *localVarList;
+// 新しい変数を追加して返す
+static Var *new_var(Token *t, Type *type, bool is_local) {
+  Var *v = calloc(1, sizeof(Var));
+  v->name = copy_string(t->str, t->len);
+  v->type = type;
+  v->len = t->len;
+  v->is_local = is_local;
+  return v;
+}
 
-void clear_local_varlist() {
-    localVarList = NULL;
+
+
+static VarList local_vars;
+static VarList *current_local_var;
+static int sum_local_size;
+
+void clear_local_varlist() { 
+  local_vars.next = NULL;
+  current_local_var = &local_vars;
+  sum_local_size = 0;
 }
 
 VarList *get_local_varlist() {
-    return localVarList;
+  return local_vars.next;
 }
 
-// 新しい変数を追加して返す
-LVar *add_local_var(Token *t, Type *type) {
-  LVar *l = calloc(1, sizeof(LVar));
-  l->name = copy_string(t->str, t->len);
-  l->type = type;
-  l->len = t->len;
-
-  // 新しい変数を先頭に追加
+Var *add_local_var(Token *t, Type *type) {
+  sum_local_size = sum_local_size + type->size;
+  
   VarList *v = calloc(1, sizeof(VarList));
-  v->var = l;
-  v->next = localVarList;
-  localVarList = v;
-  return l;
+  v->var = new_var(t, type, true);
+  current_local_var->next = v;
+  current_local_var = v;
+  return v->var;
 }
+
 
 // ローカル変数のオフセットを再計算
 int update_offset_local_varlist() {
-  // 新しいものが先頭にあり、その順にオフセットをセットする
-  //   オフセットが小さいほうがアドレスとしては大きい値になる (スタックを使用する方向)
-  //   変数の定義順にアドレスが大きい値となる
-  int offset = 0;
-  for (VarList *v = localVarList; v; v = v->next) {
-    offset += v->var->type->size;
+  // オフセットが小さいほうがアドレスとしては大きい値になる (スタックを使用する方向)
+  // 変数の定義順にアドレスが大きい値となる
+  int offset = sum_local_size;
+  for (VarList *v = local_vars.next; v; v = v->next) {
     v->var->offset = offset;
+    offset -= v->var->type->size;
   }
-  return offset;
+  return sum_local_size;
 }
 
 
+//
+static VarList global_vars;
+static VarList *current_global_var;
+
+void clear_global_varlist() {
+  global_vars.next = NULL;
+  current_global_var = &global_vars;
+}
+
+VarList *get_global_varlist() {
+  return global_vars.next;
+}
+
+// 新しい変数を追加して返す
+Var *add_global_var(Token *t, Type *type) {
+  VarList *v = calloc(1, sizeof(VarList));
+  v->var = new_var(t, type, false);
+  current_global_var->next = v;
+  current_global_var = v;
+  return v->var;
+}
 
 

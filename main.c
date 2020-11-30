@@ -39,10 +39,10 @@ int main(int argc, char **argv) {
   token = tokenize(argv[1]);
   
   printf("# will parse\n");
-  Function *mainFunction = program();
+  Program *p = program();
 
   printf("# will codegen\n");
-  codegen(mainFunction);
+  codegen(p);
 
   return 0;
 }
