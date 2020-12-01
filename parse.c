@@ -2,9 +2,8 @@
 
 
 static bool confirm_type_token() {
-  if (confirm_token(TK_INT)) {
-    return true;
-  }
+  if (confirm_token(TK_INT)) return true;
+  if (confirm_token(TK_CHAR)) return true;
 
   return false;
 }
@@ -36,13 +35,13 @@ static Node* new_add(Node *lhs, Node *rhs) {
   updateType(lhs);
   updateType(rhs);
   
-  if (lhs->evalType->kind == TY_INT && rhs->evalType->kind == TY_INT) {
+  if (is_integer(lhs->evalType) && is_integer(rhs->evalType)) {
     return new_node_binary(ND_ADD, lhs, rhs);
   }
-  if (lhs->evalType->ptr_to != NULL && rhs->evalType->kind == TY_INT) {
+  if (lhs->evalType->ptr_to != NULL && is_integer(rhs->evalType)) {
     return new_node_binary(ND_PTR_ADD, lhs, rhs);
   }
-  if (rhs->evalType->ptr_to != NULL && lhs->evalType->kind == TY_INT) {
+  if (rhs->evalType->ptr_to != NULL && is_integer(lhs->evalType)) {
     // HACK 左辺と右辺を入れ替え
     return new_node_binary(ND_PTR_ADD, rhs, lhs);
   }
@@ -54,10 +53,10 @@ static Node* new_sub(Node *lhs, Node *rhs) {
   updateType(lhs);
   updateType(rhs);
 
-  if (lhs->evalType->kind == TY_INT && rhs->evalType->kind == TY_INT) {
+  if (is_integer(lhs->evalType) && is_integer(rhs->evalType)) {
     return new_node_binary(ND_SUB, lhs, rhs);
   }
-  if (lhs->evalType->ptr_to != NULL && rhs->evalType->kind == TY_INT) {
+  if (lhs->evalType->ptr_to != NULL && is_integer(rhs->evalType)) {
     return new_node_binary(ND_PTR_SUB, lhs, rhs);
   }
   if (lhs->evalType->ptr_to != NULL && rhs->evalType->ptr_to != NULL) {
@@ -68,7 +67,7 @@ static Node* new_sub(Node *lhs, Node *rhs) {
 
 
 static Node *new_node_var(Var *v) {
-  Node *node = new_node(ND_LVAR);
+  Node *node = new_node(ND_VAR);
   node->var = v;
   return node;
 }
@@ -114,9 +113,8 @@ Type *declaration_type() {
   Type *t = NULL;
 
   // 
-  if (consume_token(TK_INT)) {
-    t = type_int();
-  }
+  if (consume_token(TK_INT)) t = type_int();
+  if (consume_token(TK_CHAR)) t = type_char();
 
   if (t == NULL) {
     error_current_token("サポートされていない型です");

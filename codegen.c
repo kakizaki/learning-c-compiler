@@ -4,9 +4,9 @@
 
 static char *funcname;
 
-  // 変数のアドレスを push
-static void push_lval_address(Node *node) {
-  if (node->kind != ND_LVAR) {
+// 変数のアドレスを push
+static void push_val_address(Node *node) {
+  if (node->kind != ND_VAR) {
     error("代入の左辺値が変数ではありません");
   }
 
@@ -22,10 +22,16 @@ static void push_lval_address(Node *node) {
 }
 
 // 変数のアドレスを取り出し、そのアドレスにある値を取り出し、その値を push
-static void push_load_value() {
+static void push_load_value(Type *t) {
   printf("  pop rax\n");
-  printf("  mov rax, [rax]\n");
-  printf("  push rax\n");
+
+  if (t->size == 1) {
+    printf("  movsx rax, byte ptr [rax]\n");
+    printf("  push rax\n");
+  } else {
+    printf("  mov rax, [rax]\n");
+    printf("  push rax\n");
+  }
 }
 
 
@@ -37,9 +43,8 @@ int publishLabelID() {
   return i;
 }
 
-static char *argreg[] = {
-  "rdi", "rsi", "rdx", "rcx", "r8", "r9"
-};
+static char *argreg_1[] = { "dil", "sil", "dl", "cl", "r8b", "r9b" };
+static char *argreg_8[] = { "rdi", "rsi", "rdx", "rcx", "r8", "r9" };
 
 
 static void gen(Node *node) {
@@ -53,13 +58,13 @@ static void gen(Node *node) {
     return;
 
   // 変数の値を参照
-  case ND_LVAR:
+  case ND_VAR:
     // 変数のアドレスを push
-    push_lval_address(node);
+    push_val_address(node);
 
     // 配列変数はポインタとして扱うため、値を読まず、アドレスのままでいい
     if (node->var->type->kind != TY_ARRAY) {
-      push_load_value();
+      push_load_value(node->var->type);
     }
     return;
 
@@ -71,14 +76,14 @@ static void gen(Node *node) {
       gen(node->lhs->lhs);
 
       // node->lhs->lhs が変数だけなら以下でいいが、*(a+8) もあるので gen に流す
-      //    push_lval_address(node->lhs->lhs);
+      //    push_val_address(node->lhs->lhs);
       //    printf("  pop rax\n");
       //    printf("  mov rax, [rax]\n");
       //    printf("  push rax\n")
       // gen(node->lhs) (gen(ND_DEREF)) はアドレス先の値を push するので処理が異なる (ほしいのはアドレス)
       
     } else {
-      push_lval_address(node->lhs);
+      push_val_address(node->lhs);
     }
 
     // 右辺の値を push
@@ -87,7 +92,12 @@ static void gen(Node *node) {
     // 右辺の値を取り出し、変数のアドレスを取り出し、変数のアドレスへ右辺の値をセット
     printf("  pop rdi\n");
     printf("  pop rax\n");
-    printf("  mov [rax], rdi\n");
+
+    if (node->lhs->evalType->size == 1) {
+      printf("  mov [rax], dil\n");
+    } else {
+      printf("  mov [rax], rdi\n");
+    }
     printf("  push rdi\n");
     return;
 
@@ -166,7 +176,7 @@ static void gen(Node *node) {
         argsLength++;
       }
       for (int i = argsLength - 1; 0 <= i ; i--) {
-        printf("  pop %s\n", argreg[i]);
+        printf("  pop %s\n", argreg_8[i]);
       }
     }
 
@@ -191,12 +201,12 @@ static void gen(Node *node) {
     return;
 
   case ND_ADDR:
-    push_lval_address(node->lhs);
+    push_val_address(node->lhs);
     return;
   
   case ND_DEREF:
     gen(node->lhs);
-    push_load_value();
+    push_load_value(node->lhs->evalType);
     return;
   }
 
@@ -286,8 +296,12 @@ void codegen(Program *program) {
 
     // 引数をスタックに追加
     int i = 0;
-    for (VarList *v = f->params; v && v->var; v = v->next) {
-      printf("  mov [rbp-%d], %s\n", v->var->offset, argreg[i]);
+    for (VarList *v = f->params; v; v = v->next) {
+      if (v->var->type->size == 1) {
+        printf("  mov [rbp-%d], %s\n", v->var->offset, argreg_1[i]);
+      } else {
+        printf("  mov [rbp-%d], %s\n", v->var->offset, argreg_8[i]);
+      }
       i++;
     }  
 

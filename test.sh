@@ -52,6 +52,8 @@ try 1 'main() {a=1;if(0)2;a;}'
 try 1 'main() {a=1;{if(0)2;}a;}'
 COMMENTOUT
 
+
+
 try 0 'int main() {return 0;}'
 try 42 'int main() {return 42;}'
 
@@ -255,6 +257,23 @@ try 32 'int x[4]; int main() { return sizeof(x); }'
 try 6 'int a;int main() {int b = 2;a = 3;return a * b;}'
 try 6 'int a;int b;int main() {b = 2;a = 3;return a * b;}'
 try 12 'int a;int main() {a=12;f2();return a;} int f2(){int a=2;return 1;}'
+
+
+#
+echo '### char'
+try 1 'char a;int b;int main() {a=1;b=2;return a;}'
+try 1 'int main() {char a;int b;a=1;b=2;return a;}'
+
+try 1 'int main() { char x=1; return x; }'
+try 1 'int main() { char x=1; char y=2; return x; }'
+try 2 'int main() { char x=1; char y=2; return y; }'
+
+try 1 'int main() { char x; return sizeof(x); }'
+try 10 'int main() { char x[10]; return sizeof(x); }'
+try 1 'int main() { return sub_char(7, 3, 3); } int sub_char(char a, char b, char c) { return a-b-c; }'
+try 2 'int main() { char a; char b; char c; a=1; b=2; c=3; return *(&a+1); }'
+
+exit
 
 
 

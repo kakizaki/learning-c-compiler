@@ -301,6 +301,14 @@ Token *tokenize(char *p) {
       continue;
     }
 
+    word = "char";
+    length = strlen(word);
+    if (is_reserved(p, word, length)) {
+      cur = new_token(TK_CHAR, cur, p, length);
+      p += length;
+      continue;
+    }
+
     word = "sizeof";
     length = strlen(word);
     if (is_reserved(p, word, length)) {

@@ -22,6 +22,7 @@ typedef enum {
   TK_WHILE,     // while
   TK_FOR,       // for
   TK_INT,       // int
+  TK_CHAR,      // char
   TK_SIZEOF,    // sizeof
   TK_EOF,       // 入力の終わりを表すトークン
 } TokenKind;
@@ -67,7 +68,13 @@ Token *tokenize(char *p);
 
 
 // 変数の型
-typedef enum { TY_INT, TY_PTR, TY_ARRAY } TypeKind;
+typedef enum { 
+  TY_INT, 
+  TY_CHAR, 
+  TY_PTR, 
+  TY_ARRAY 
+} TypeKind;
+
 typedef struct Type Type;
 
 struct Type {
@@ -136,7 +143,7 @@ typedef enum {
   ND_LE,  // <=
 
   ND_ASSIGN,  // =
-  ND_LVAR,    // ローカル変数 
+  ND_VAR,    // 変数 
 
   ND_RETURN,
   ND_IF,
@@ -157,11 +164,11 @@ typedef struct NodeList NodeList;
 // 抽象構文木のノードの型
 struct Node {
   NodeKind kind;  // ノードの型
-  Type *evalType;       // 演算結果の値の型
+  Type *evalType; // 演算結果の値の型
   Node *lhs;      // 左辺
   Node *rhs;      // 右辺
-  int value;        // kind が ND_NUM の場合のみ使う
-  Var *var;      // kind が ND_LVAR の場合のみ使う
+  int value;      // kind が ND_NUM の場合のみ使う
+  Var *var;       // kind が ND_VAR の場合のみ使う
 
 
   // if (cond) trueStatement; else falseStatement;
@@ -241,9 +248,10 @@ Node *primary();
 // type.c
 // 
 Type *type_int();
+Type *type_char();
 Type *type_pointer_to(Type *base);
 Type *type_array_to(Type *base, int length);
-bool isInteger(Type* t);
+bool is_integer(Type* t);
 void updateType(Node *node);
 
 

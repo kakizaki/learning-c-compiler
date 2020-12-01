@@ -2,6 +2,7 @@
 
 static Type *int_type;
 
+static Type *char_type;
 
 Type *type_int() {
     if (int_type == NULL) {
@@ -11,6 +12,16 @@ Type *type_int() {
         int_type->size = 8;
     }
     return int_type;
+}
+
+Type *type_char() {
+    if (char_type == NULL) {
+        char_type = calloc(1, sizeof(Type));
+        char_type->kind = TY_CHAR;
+        char_type->size_of_kind = 1;
+        char_type->size = 1;
+    }
+    return char_type;
 }
 
 Type *type_pointer_to(Type *t) {
@@ -33,8 +44,8 @@ Type *type_array_to(Type *t, int length) {
 }
 
 
-bool isInteger(Type *t) {
-    return t->kind == TY_INT;
+bool is_integer(Type *t) {
+    return t->kind == TY_INT || t->kind == TY_CHAR;
 }
 
 void updateType(Node *node) {
@@ -71,7 +82,7 @@ void updateType(Node *node) {
     case ND_NUM:
         node->evalType = type_int();
         return;
-    case ND_LVAR:
+    case ND_VAR:
         node->evalType = node->var->type;
         return;
     case ND_PTR_ADD:
