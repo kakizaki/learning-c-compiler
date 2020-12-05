@@ -80,10 +80,18 @@ static Node *new_node_array_indexer(Var *v, Node *indexer) {
 }
 
 
+static Node *new_node_array_indexer_string(Node *s, Node *indexer) {
+  Node *deref = new_node(ND_DEREF);
+  deref->lhs = new_add(s, indexer);
+  return deref;
+}
+
+
 
 // program = ( function | global_var )*
 Program *program() {
   clear_global_varlist();
+
   Program *p = calloc(1, sizeof(Program));
 
   Function head = {};
@@ -104,6 +112,7 @@ Program *program() {
 
   p->function = head.next;
   p->global_var = get_global_varlist();
+  p->string_list = get_string_list();
   return p;
 }
 
@@ -113,8 +122,8 @@ Type *declaration_type() {
   Type *t = NULL;
 
   // 
-  if (consume_token(TK_INT)) t = type_int();
-  if (consume_token(TK_CHAR)) t = type_char();
+  if (consume_token(TK_INT) != NULL) t = type_int();
+  if (consume_token(TK_CHAR) != NULL) t = type_char();
 
   if (t == NULL) {
     error_current_token("サポートされていない型です");
@@ -195,12 +204,6 @@ Function* function2(Type *return_type, Token *ident) {
 Node *declaration() {
   Type *t = declaration_type();
 
-  // ポインタ
-  while (consume_reserved("*")) {
-    Type *ptr = type_pointer_to(t);
-    t = ptr;
-  }
-
   Token *ident = expect_ident();
   if (find_var(get_local_varlist(), ident) != NULL) {
     error_at(ident->str, "すでに定義されています");
@@ -217,6 +220,7 @@ Node *declaration() {
     assign->rhs = expression();
   }
   else {
+    // HACK グローバル変数の場合は 0 に初期化するが、ローカル変数の場合は不要らしい
     assign->rhs = new_node_num(0);
   }
   return assign;
@@ -287,7 +291,7 @@ Node *statement() {
     return node;
   }
 
-  if (consume_token(TK_IF)) {
+  if (consume_token(TK_IF) != NULL) {
     node = new_node(ND_IF);
     
     expect("(");
@@ -296,7 +300,7 @@ Node *statement() {
 
     node->trueStatement = statement();
 
-    if (consume_token(TK_ELSE)) {
+    if (consume_token(TK_ELSE) != NULL) {
       node->kind = ND_IF_ELSE;
       node->falseStatement = statement();
     }
@@ -304,7 +308,7 @@ Node *statement() {
     return node;
   }
 
-  if (consume_token(TK_WHILE)) {
+  if (consume_token(TK_WHILE) != NULL) {
     node = new_node(ND_WHILE);
 
     expect("(");
@@ -316,7 +320,7 @@ Node *statement() {
     return node;
   }
 
-  if (consume_token(TK_FOR)) {
+  if (consume_token(TK_FOR) != NULL) {
     node = new_node(ND_FOR);
 
     expect("(");
@@ -347,7 +351,7 @@ Node *statement() {
   }
 
 
-  if (consume_token(TK_RETURN)) {
+  if (consume_token(TK_RETURN) != NULL) {
     node = new_node(ND_RETURN);
     node->lhs = expression();
     expect(";");
@@ -487,13 +491,30 @@ NodeList *function_arg_list() {
 
 
 // HACK 配列は一次元のみ
-// primary = num 
-//        | indent ( '[' expression ']' | function_arg_list )?
+// primary = num
 //        | '(' expression ')'
+//        | str ( '[' expression ']' )?
+//        | indent ( '[' expression ']' | function_arg_list )?
 Node *primary() {
+  if (confirm_token(TK_NUM)) {
+    return new_node_num(expect_number());
+  }
+
   if (consume_reserved("(")) {
     Node *node = expression();
     expect(")");
+    return node;
+  }
+
+  Token *str = consume_token(TK_STR);
+  if (str != NULL) {
+    Node *node = new_node(ND_STR);
+    node->string = add_string_literal(str);
+    if (consume_reserved("[")) {
+        Node *exp = expression();
+        expect("]");
+        return new_node_array_indexer_string(node, exp) ;
+    }
     return node;
   }
 
@@ -514,18 +535,17 @@ Node *primary() {
       }
     }
 
-    if (v->type->kind == TY_ARRAY) {
+    if (v->type->kind == TY_ARRAY || v->type->kind == TY_PTR) {
       if (consume_reserved("[")) {
         Node *exp = expression();
         expect("]");
         return new_node_array_indexer(v, exp) ;
       }
     }
-
     return new_node_var(v);
   }
-
-  return new_node_num(expect_number());
+  
+  error_current_token("サポートされていないトークンです");
 }
 
 

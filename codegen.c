@@ -57,11 +57,16 @@ static void gen(Node *node) {
     printf("  push %d\n", node->value);
     return;
 
+  // 文字列
+  case ND_STR:
+    printf("  push offset .LC%d\n", node->string->id);
+    return;
+
   // 変数の値を参照
   case ND_VAR:
     // 変数のアドレスを push
     push_val_address(node);
-
+    
     // 配列変数はポインタとして扱うため、値を読まず、アドレスのままでいい
     if (node->var->type->kind != TY_ARRAY) {
       push_load_value(node->var->type);
@@ -85,9 +90,12 @@ static void gen(Node *node) {
     } else {
       push_val_address(node->lhs);
     }
+    printf("#  aaaa\n");
 
     // 右辺の値を push
     gen(node->rhs);
+    
+    printf("#  bbbb\n");
 
     // 右辺の値を取り出し、変数のアドレスを取り出し、変数のアドレスへ右辺の値をセット
     printf("  pop rdi\n");
@@ -275,11 +283,16 @@ static void gen(Node *node) {
 void codegen(Program *program) {
   printf(".intel_syntax noprefix\n");
 
-  if (program->global_var != NULL) {
-    printf(".data\n");
-    for (VarList *v = program->global_var; v; v = v->next) {
-      printf("%s:\n", v->var->name);
-      printf("  .zero %d\n", v->var->type->size);
+  printf(".data\n");
+  for (VarList *v = program->global_var; v; v = v->next) {
+    printf("%s:\n", v->var->name);
+    printf("  .zero %d\n", v->var->type->size);
+  }
+
+  for (StringList *s = program->string_list; s; s = s->next) {
+    printf(".LC%d:\n", s->s->id);
+    for (int i = 0; i < s->s->length; i++) {
+      printf("  .byte %d\n", s->s->p[i]);
     }
   }
 

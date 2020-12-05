@@ -53,7 +53,6 @@ try 1 'main() {a=1;{if(0)2;}a;}'
 COMMENTOUT
 
 
-
 try 0 'int main() {return 0;}'
 try 42 'int main() {return 42;}'
 
@@ -273,8 +272,16 @@ try 10 'int main() { char x[10]; return sizeof(x); }'
 try 1 'int main() { return sub_char(7, 3, 3); } int sub_char(char a, char b, char c) { return a-b-c; }'
 try 2 'int main() { char a; char b; char c; a=1; b=2; c=3; return *(&a+1); }'
 
-exit
 
+#
+echo '### string literal'
+try 1 'int main() { char *c = "abcde"; return 1; }'
+try 97 'int main() { char *c = "abcde"; return c[0]; }'
+try 97 'int main() { return "abc"[0]; }'
+try 98 'int main() { return "abc"[1]; }'
+try 99 'int main() { return "abc"[2]; }'
+try 0 'int main() { return "abc"[3]; }'
+try 4 'int main() { return sizeof("abc"); }'
 
 
 echo OK

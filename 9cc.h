@@ -16,6 +16,7 @@ typedef enum {
   TK_RESERVED,  // 記号
   TK_IDENT,     // 識別子
   TK_NUM,       // 整数トークン
+  TK_STR,       // 文字列トークン
   TK_RETURN,    // return
   TK_IF,        // if
   TK_ELSE,      // else
@@ -53,7 +54,7 @@ bool confirm_reserved(char *op);
 bool confirm_token(TokenKind t);
 
 bool consume_reserved(char *op);
-bool consume_token(TokenKind t);
+Token *consume_token(TokenKind t);
 Token *consume_ident();
 
 bool at_eof();
@@ -83,6 +84,21 @@ struct Type {
   int size;           // パディング込みのサイズ
   Type *ptr_to;
   size_t array_length;
+};
+
+
+// 文字リテラル
+typedef struct StringLiteral StringLiteral;
+struct StringLiteral {
+  char *p;
+  int length;
+  int id;
+};
+
+typedef struct StringList StringList;
+struct StringList {
+  StringList *next;
+  StringLiteral *s;
 };
 
 
@@ -118,6 +134,8 @@ void clear_global_varlist();
 VarList *get_global_varlist();
 Var *add_global_var(Token *t, Type *type);
 
+StringLiteral *add_string_literal(Token *t);
+StringList *get_string_list();
 
 
 
@@ -132,6 +150,7 @@ typedef enum {
   ND_MUL, // *
   ND_DIV, // /
   ND_NUM, // 整数
+  ND_STR, // 文字列
 
   ND_PTR_ADD,
   ND_PTR_SUB,
@@ -169,6 +188,7 @@ struct Node {
   Node *rhs;      // 右辺
   int value;      // kind が ND_NUM の場合のみ使う
   Var *var;       // kind が ND_VAR の場合のみ使う
+  StringLiteral *string;
 
 
   // if (cond) trueStatement; else falseStatement;
@@ -217,6 +237,8 @@ struct Program {
   Function *function;
   VarList *global_var;
   NodeList *init_global_var;
+
+  StringList *string_list;
 };
 
 

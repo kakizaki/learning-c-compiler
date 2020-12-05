@@ -109,6 +109,20 @@ static int getIdentWord(char *p) {
   return len;
 }
 
+static int getStringLength(char *p) {
+  int len = 0;
+
+  if (*p == '"') {
+    p++;
+    while (*p != '"') {
+      len++;
+      p++;
+    }
+  }
+  return len;
+}
+
+
 static bool is_alnum(char c) {
   return ('a' <= c && c <= 'z') 
   || ('A' <= c && c <= 'Z')
@@ -183,13 +197,14 @@ bool consume_reserved(char *op) {
 
 
 // 現在のトークンが期待するトークンだった場合に、次のトークンへ移動する
-bool consume_token(TokenKind t) {
-  if (token->kind != t) {
-    return false;
+Token *consume_token(TokenKind k) {
+  if (token->kind != k) {
+    return NULL;
   }
 
+  Token *t = token;
   token = token->next;
-  return true;
+  return t;
 }
 
 
@@ -327,6 +342,13 @@ Token *tokenize(char *p) {
     if (isdigit(*p)) {
       cur = new_token(TK_NUM, cur, p, 0);
       cur->val = strtol(p, &p, 10);
+      continue;
+    }
+
+    length = getStringLength(p);
+    if (0 < length) {
+      cur = new_token(TK_STR, cur, p + 1, length);
+      p += length + 2;
       continue;
     }
 

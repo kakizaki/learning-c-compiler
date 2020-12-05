@@ -26,7 +26,6 @@ char* copy_string(const char* s, int len) {
 // --- main ---
 //
 int main(int argc, char **argv) {
-
   if (argc != 2) {
     fprintf(stderr, "引数の個数がただしくありません\n");
     return 1;

@@ -82,6 +82,9 @@ void updateType(Node *node) {
     case ND_NUM:
         node->evalType = type_int();
         return;
+    case ND_STR:
+        node->evalType = type_array_to(type_char(), node->string->length);
+        return;
     case ND_VAR:
         node->evalType = node->var->type;
         return;

@@ -66,9 +66,18 @@ int update_offset_local_varlist() {
 static VarList global_vars;
 static VarList *current_global_var;
 
+static int string_literal_id;
+static StringList string_list;
+static StringList *string_list_current;
+
+
 void clear_global_varlist() {
   global_vars.next = NULL;
   current_global_var = &global_vars;
+  
+  string_literal_id = 1;
+  string_list.next = NULL;
+  string_list_current = &string_list;
 }
 
 VarList *get_global_varlist() {
@@ -84,4 +93,20 @@ Var *add_global_var(Token *t, Type *type) {
   return v->var;
 }
 
+StringLiteral *add_string_literal(Token *t) {
+  StringLiteral* s = calloc(1, sizeof(StringLiteral));
+  s->p = copy_string(t->str, t->len);
+  s->length = t->len + 1;
+  s->id = string_literal_id;
+  string_literal_id++;
 
+  StringList* l = calloc(1, sizeof(StringList));
+  l->s = s;
+  string_list_current->next = l;
+  string_list_current = l;
+  return s;
+}
+
+StringList *get_string_list() {
+  return string_list.next;
+}
