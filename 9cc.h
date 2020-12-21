@@ -290,8 +290,11 @@ void codegen(Program *p);
 // global variables
 //
 
+// 入力ファイル名
+extern char *filename;
+
 // 入力文字列
-extern char* user_input;
+extern char *user_input;
 
 // 現在着目しているトークン
 extern Token *token;

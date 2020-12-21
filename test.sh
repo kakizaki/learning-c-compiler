@@ -6,41 +6,47 @@ int ret5() { return 5; }
 int add(int a, int b) { return a + b; }
 int sub(int a, int b) { return a - b; }
 int printInt(int a) { printf("%x\n", a); return a; }
+int printString(char *s) { printf("%s\n", s); return 1; }
 EOF
 
 
 try() {
   expected="$1"
   input="$2"
+  faulted=0
 
-  ./9cc "$input" > tmp.s
-  gcc -static -o tmp tmp.s tmp2.o
-  ./tmp
-  actual="$?"
+  echo "$input" > tmp_testcode
+  ./9cc tmp_testcode > tmp.s
 
-  if [ "$actual" = "$expected" ]; then
-    echo "$input => $actual"
+  if [ ! $? = 0 ]; then
+    echo "! complie error !"
+    faulted=1
   else
-    echo "$expected expected, but got $actual >> $input"
+    gcc -static -o tmp tmp.s tmp2.o
+    ./tmp
+    actual="$?"
+
+    if [ "$actual" = "$expected" ]; then
+      echo "$input => $actual"
+    else
+      echo "$expected expected, but got $actual >> $input"
+      faulted=1
+    fi
+  fi
+
+  # dryrun の場合は、失敗しても終了させない
+  if [ $3 = "dryrun" ]; then
+    return
+  fi
+  
+  if [ $faulted = 1 ]; then 
     exit 1
   fi
 }
 
 
 dryrun() {
-  expected="$1"
-  input="$2"
-
-  ./9cc "$input" > tmp.s
-  gcc -static -o tmp tmp.s tmp2.o
-  ./tmp
-  actual="$?"
-
-  if [ "$actual" = "$expected" ]; then
-    echo "$input => $actual"
-  else
-    echo "$expected expected, but got $actual >> $input"
-  fi
+  try "$1" "$2" "dryrun"
 }
 
 
@@ -52,6 +58,10 @@ try 1 'main() {a=1;if(0)2;a;}'
 try 1 'main() {a=1;{if(0)2;}a;}'
 COMMENTOUT
 
+dryrun 1 'int int main() {return 0;}'
+
+
+try 0 'int main() {return 0;}'
 
 try 0 'int main() {return 0;}'
 try 42 'int main() {return 42;}'
