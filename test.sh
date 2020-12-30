@@ -35,7 +35,7 @@ try() {
   fi
 
   # dryrun の場合は、失敗しても終了させない
-  if [ $3 = "dryrun" ]; then
+  if [ "${3}" = "dryrun" ]; then
     return
   fi
   
