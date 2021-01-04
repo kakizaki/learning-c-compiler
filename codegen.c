@@ -214,7 +214,7 @@ static void gen(Node *node) {
   
   case ND_DEREF:
     gen(node->lhs);
-    push_load_value(node->lhs->evalType);
+    push_load_value(node->evalType);
     return;
   }
 
