@@ -52,7 +52,7 @@ void error_current_token(char *fmt, ...) {
   va_list ap;
   va_start(ap, fmt);
 
-  int pos = token->str - user_input;
+  int pos = token->begin - user_input;
   fprintf(stderr, "%s\n", user_input);
   fprintf(stderr, "%*s", pos, "");
   fprintf(stderr, "^ ");
@@ -65,8 +65,8 @@ void error_current_token(char *fmt, ...) {
 void expect(char *op) {
   if (token->kind != TK_RESERVED 
   || strlen(op) != token->len
-  || memcmp(token->str, op, token->len) != 0) {
-    error_at(token->str, "'%s'ではありません", op);
+  || memcmp(token->begin, op, token->len) != 0) {
+    error_at(token->begin, "'%s'ではありません", op);
   }
 
   token = token->next;
@@ -76,7 +76,7 @@ void expect(char *op) {
 // 現在のトークンが期待するトークンだった場合に、次のトークンへ移動する
 void expect_token(TokenKind t) {
   if (token->kind != t) {
-    error_at(token->str, "'トークンではありません");
+    error_at(token->begin, "'トークンではありません");
   }
 
   token = token->next;
@@ -86,9 +86,9 @@ void expect_token(TokenKind t) {
 // 現在のトークンが数字だった場合に、次のトークンへ移動する
 int expect_number() {
   if (token->kind != TK_NUM) 
-    error_at(token->str, "'数ではありません");
+    error_at(token->begin, "'数ではありません");
 
-  int val = token->val;
+  int val = token->numLiteral;
   token = token->next;
   return val;
 }
@@ -97,7 +97,7 @@ int expect_number() {
 // 現在のトークンが識別子だった場合に、次のトークンへ移動する
 Token *expect_ident() {
   if (token->kind != TK_IDENT) 
-    error_at(token->str, "識別子ではありません");
+    error_at(token->begin, "識別子ではありません");
 
   Token *t = token;
   token = token->next;
@@ -131,23 +131,25 @@ static int getIdentWord(char *p) {
   return len;
 }
 
-static int getStringLength(char *p) {
-  int len = 0;
 
-  if (*p != '"') {
-    return -1;
+static char get_escaped_char(char c) {
+  switch (c) {
+    case 'a': return '\a';
+    case 'b': return '\b';
+    case 't': return '\t';
+    case 'n': return '\n';
+   
+    case 'v': return '\v';
+    case 'f': return '\f';
+    case 'r': return '\r';
+    case 'e': return '\e';
+  
+    case '0': return '\0';
+    case 'j': return '\j';
+    case 'k': return '\k';
+    case 'l': return '\l';
   }
-
-  p++;
-  while (*p) {
-    if (*p == '"') {
-      return len;
-    }
-    len++;
-    p++;
-  }
-
-  return -1;
+  return c;
 }
 
 
@@ -192,7 +194,7 @@ static bool is_reserved_char(const char p) {
 bool confirm_reserved(char *op) {
   if (token->kind != TK_RESERVED 
   || strlen(op) != token->len 
-  || memcmp(token->str, op, token->len) != 0) {
+  || memcmp(token->begin, op, token->len) != 0) {
     return false;
   }
   return true;
@@ -215,7 +217,7 @@ bool confirm_token(TokenKind t) {
 bool consume_reserved(char *op) {
   if (token->kind != TK_RESERVED 
   || strlen(op) != token->len 
-  || memcmp(token->str, op, token->len) != 0) {
+  || memcmp(token->begin, op, token->len) != 0) {
     return false;
   }
 
@@ -260,11 +262,63 @@ static Token *new_token(TokenKind kind, Token *cur, char *str, int len) {
   Token *tok = calloc(1, sizeof(Token));
 
   tok->kind = kind;
-  tok->str = str;
+  tok->begin = str;
   tok->len = len;
   cur->next = tok;
   return tok;
 }
+
+
+static Token *new_token_string_literal(char *p, Token *cur) {
+  if (*p != '"') {
+    error_at(p, "unopened string literal");
+    return NULL;
+  }
+
+  char *start = p;
+  char buf[1024];
+  bool escaped = false;
+  int i = 0;
+  p++;
+
+  while (*p) {
+    if (*p == '"') {
+      Token *t = new_token(TK_STR, cur, p, p - start + 1);
+      t->strLiteral = malloc(i + 1);
+      memcpy(t->strLiteral, buf, i);
+      t->strLiteral[i] = '\0';
+      t->strLiteralLen = i + 1;
+      return t;
+    }
+
+    if (i == sizeof(buf)) {
+      error_at(p, "string literal too large");
+      return NULL;
+    }
+
+    if (escaped) {
+      escaped = false;
+      buf[i] = get_escaped_char(*p);
+      i++;
+    } else {
+      if (*p == '\\') {
+        escaped = true;
+      } else {
+        buf[i] = *p;
+        i++;
+      }
+    }
+    
+    p++;
+  }
+
+  error_at(p, "unclosed string literarl");
+  return NULL;
+}
+
+
+
+
 
 
 // トークンに分割する
@@ -389,14 +443,14 @@ Token *tokenize(char *p) {
 
     if (isdigit(*p)) {
       cur = new_token(TK_NUM, cur, p, 0);
-      cur->val = strtol(p, &p, 10);
+      cur->numLiteral = strtol(p, &p, 10);
       continue;
     }
 
-    length = getStringLength(p);
-    if (0 <= length) {
-      cur = new_token(TK_STR, cur, p + 1, length);
-      p += length + 2;
+    if (*p == '\"') {
+      Token *str = new_token_string_literal(p, cur);
+      cur = str;
+      p += str->len;
       continue;
     }
 

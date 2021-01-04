@@ -34,9 +34,12 @@ typedef struct Token Token;
 struct Token {
   TokenKind kind;  // トークンの型
   Token *next;     // 次の入力トークン
-  int val;         // tyがTK_NUMの場合、その数値
-  char *str;       // トークン文字列
+  char *begin;     // トークン文字列
   int len;         // トークンの長さ
+
+  int numLiteral;         // tyがTK_NUMの場合、その数値
+  char *strLiteral;       // tyがTK_STRの場合、その文字列
+  int strLiteralLen;     // tyがTK_STRの場合、その文字列
 };
 
 

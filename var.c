@@ -4,7 +4,7 @@
 
 Var *find_var(VarList *list, Token *tok) {
   for (VarList *v = list; v; v = v->next) {
-    if (v->var->len == tok->len && !memcmp(tok->str, v->var->name, v->var->len)) {
+    if (v->var->len == tok->len && !memcmp(tok->begin, v->var->name, v->var->len)) {
       return v->var;
     }
   }
@@ -15,7 +15,7 @@ Var *find_var(VarList *list, Token *tok) {
 // 新しい変数を追加して返す
 static Var *new_var(Token *t, Type *type, bool is_local) {
   Var *v = calloc(1, sizeof(Var));
-  v->name = copy_string(t->str, t->len);
+  v->name = copy_string(t->begin, t->len);
   v->type = type;
   v->len = t->len;
   v->is_local = is_local;
@@ -95,8 +95,8 @@ Var *add_global_var(Token *t, Type *type) {
 
 StringLiteral *add_string_literal(Token *t) {
   StringLiteral* s = calloc(1, sizeof(StringLiteral));
-  s->p = copy_string(t->str, t->len);
-  s->length = t->len + 1;
+  s->p = copy_string(t->strLiteral, t->strLiteralLen);
+  s->length = t->strLiteralLen;
   s->id = string_literal_id;
   string_literal_id++;
 

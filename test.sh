@@ -293,6 +293,25 @@ try 99 'int main() { return "abc"[2]; }'
 try 0 'int main() { return "abc"[3]; }'
 try 4 'int main() { return sizeof("abc"); }'
 
-try 97 'int main() { return a(); } int a() { return "abc"[0]; }'
+
+# 
+echo '### escape char'
+try 7 'int main() { return "\a"[0]; }'
+try 8 'int main() { return "\b"[0]; }'
+try 9 'int main() { return "\t"[0]; }'
+try 10 'int main() { return "\n"[0]; }'
+try 11 'int main() { return "\v"[0]; }'
+try 12 'int main() { return "\f"[0]; }'
+try 13 'int main() { return "\r"[0]; }'
+try 27 'int main() { return "\e"[0]; }'
+try 0 'int main() { return "\0"[0]; }'
+
+try 106 'int main() { return "\j"[0]; }'
+try 107 'int main() { return "\k"[0]; }'
+try 108 'int main() { return "\l"[0]; }'
+
+try 97 'int main() { return "\aa"[1]; }'
+
+
 
 echo OK

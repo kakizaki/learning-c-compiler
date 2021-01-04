@@ -9,7 +9,6 @@ int assert(int expected, int actual) {
     testindex = testindex + 1;
     if (expected != actual) {
         printf("#%d: %d expected, but got %d\n", testindex, expected, actual);
-        println(" ");
         exit(1);
     }
     return 0;
@@ -19,7 +18,6 @@ int assert_char(char expected, char actual) {
     testindex = testindex + 1;
     if (expected != actual) {
         printf("#%d: %d expected, but got %d\n", testindex, expected, actual);
-        println(" ");
         exit(1);
     }
     return 0;
@@ -27,7 +25,7 @@ int assert_char(char expected, char actual) {
 
 
 int main() {
-    clear(); println("# 演算子");
+    clear(); printf("# 演算子\n");
     assert(0, test01_01());
     assert(0, test01_02());
     assert(42, test01_03());
@@ -60,24 +58,24 @@ int main() {
     assert(1, test01_26());
 
 
-    clear(); println("# 複文");
+    clear(); printf("# 複文\n");
     assert(2, test02_01());
     assert(3, test02_02());
 
-    clear(); println("# 変数");
+    clear(); printf("# 変数\n");
     assert(3, test02_03());
     assert(3, test02_04());
     assert(3, test02_05());
     assert(0, test02_06());
 
-    clear(); println("# 変数 2");
+    clear(); printf("# 変数 2\n");
     assert(3, test02_07());
     assert(3, test02_08());
     assert(3, test02_09());
     assert(0, test02_10());
     assert(3, test02_11());
 
-    clear(); println("# return");
+    clear(); printf("# return\n");
     assert(4, test02_12());
     assert(3, test02_13());
     assert(3, test02_14());
@@ -85,7 +83,7 @@ int main() {
     assert(3, test02_16());
     assert(2, test02_17());
 
-    clear(); println("# if");
+    clear(); printf("# if\n");
     assert(2, test02_18());
     assert(3, test02_19());
     assert(2, test02_20());
@@ -93,7 +91,7 @@ int main() {
     assert(3, test02_22());
     assert(3, test02_23());
 
-    clear(); println("# if else");
+    clear(); printf("# if else\n");
     assert(2, test02_24());
     assert(3, test02_25());
     assert(2, test02_26());
@@ -101,23 +99,23 @@ int main() {
     assert(3, test02_28());
     assert(4, test02_29());
 
-    clear(); println("# while");
+    clear(); printf("# while\n");
     assert(10, test02_30());
     assert(9, test02_31());
     assert(1, test02_32());
 
-    clear(); println("# for");
+    clear(); printf("# for\n");
     assert(45, test02_33());
     assert(10, test02_34());
 
-    clear(); println("# {}");
+    clear(); printf("# {}\n");
     assert(3, test02_35());
     assert(2, test02_36());
     assert(4, test02_37());
     assert(3, test02_38());
     assert(55, test02_39());
 
-    clear(); println("# pointer & *");
+    clear(); printf("# pointer & *\n");
     assert(1, test_pointer_01());
     assert(3, test_pointer_02());
     assert(4, test_pointer_03());
@@ -128,21 +126,21 @@ int main() {
     assert(7, test_pointer_08());
     assert(2, test_pointer_09());
 
-    clear(); println("# pointer arithmetic");
+    clear(); printf("# pointer arithmetic\n");
     assert(5, test_pointer_arithmetic_01());
     assert(3, test_pointer_arithmetic_02());
     assert(7, test_pointer_arithmetic_03());
     assert(7, test_pointer_arithmetic_04());
     assert(2, test_pointer_arithmetic_05());
 
-    clear(); println("# sizeof");
+    clear(); printf("# sizeof\n");
     assert(8, test_sizeof_01());
     assert(8, test_sizeof_02());
     assert(8, test_sizeof_03());
     assert(8, test_sizeof_04());
     assert(8, test_sizeof_05());
 
-    clear(); println("# array");
+    clear(); printf("# array\n");
     assert(4, test_array_01());
     assert(3, test_array_02());
     assert(3, test_array_03());
@@ -151,7 +149,7 @@ int main() {
     assert(5, test_array_06());
 
 
-    clear(); println("# array indexer");
+    clear(); printf("# array indexer\n");
     assert(1, test_arrayi_01());
     assert(1, test_arrayi_02());
     assert(1, test_arrayi_03());
@@ -159,13 +157,10 @@ int main() {
     assert(1, test_arrayi_05());
     assert(45, test_arrayi_06());
 
-    clear(); println("# array sizeof");
+    clear(); printf("# array sizeof\n");
     assert(40, test_arraysizeof_01());
 
-
-
-
-    clear(); println("# char");
+    clear(); printf("# char\n");
     assert(1, test_char_02());
     assert(1, test_char_04());
     assert(1, test_char_05());
@@ -175,7 +170,7 @@ int main() {
     assert(1, test_char_09());
     assert(2, test_char_10());
 
-    clear(); println("# string literal");
+    clear(); printf("# string literal\n");
     assert(1, test_string_literal_01());
     assert_char(97, test_string_literal_02());
     assert_char(97, test_string_literal_03());
@@ -183,6 +178,20 @@ int main() {
     assert_char(99, test_string_literal_05());
     assert_char(0, test_string_literal_06());
     assert(4, test_string_literal_07());
+    
+    clear(); printf("# escape char\n");
+    assert(7  , test_escape_char01());
+    assert(8  , test_escape_char02());
+    assert(9  , test_escape_char03());
+    assert(10 , test_escape_char04());
+    assert(11 , test_escape_char05());
+    assert(12 , test_escape_char06());
+    assert(13 , test_escape_char07());
+    assert(27 , test_escape_char08());
+    assert(0  , test_escape_char09());
+    assert(106, test_escape_char10());
+    assert(107, test_escape_char11());
+    assert(108, test_escape_char12());
 
     return 0;
 }
@@ -376,6 +385,23 @@ int test_string_literal_04() { return "abc"[1]; }
 int test_string_literal_05() { return "abc"[2]; }
 int test_string_literal_06() { return "abc"[3]; }
 int test_string_literal_07() { return sizeof("abc"); }
+
+
+// ### escape char
+int test_escape_char01() { return "\a"[0]; }
+int test_escape_char02() { return "\b"[0]; }
+int test_escape_char03() { return "\t"[0]; }
+int test_escape_char04() { return "\n"[0]; }
+int test_escape_char05() { return "\v"[0]; }
+int test_escape_char06() { return "\f"[0]; }
+int test_escape_char07() { return "\r"[0]; }
+int test_escape_char08() { return "\e"[0]; }
+int test_escape_char09() { return "\0"[0]; }
+int test_escape_char10() { return "\j"[0]; }
+int test_escape_char11() { return "\k"[0]; }
+int test_escape_char12() { return "\l"[0]; }
+//char* test_escape_char13() { return "\naaaa\nbbbb\ncccc\n"; }
+
 
 
 

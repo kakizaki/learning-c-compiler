@@ -152,7 +152,7 @@ Type *declaration_array(Type *t) {
 Var *global_variable(Type *t, Token *ident) {
   Var *v = find_var(get_global_varlist(), ident);
   if (v != NULL) {
-    error_at(ident->str, "すでに定義されています");
+    error_at(ident->begin, "すでに定義されています");
   }
 
   if (confirm_reserved("[")) {
@@ -178,7 +178,7 @@ Function* function2(Type *return_type, Token *ident) {
 
   Function *func = calloc(1, sizeof(Function));
   func->return_type = return_type;
-  func->name = copy_string(ident->str, ident->len);
+  func->name = copy_string(ident->begin, ident->len);
   func->params = function_param_list();
 
   expect("{");
@@ -206,7 +206,7 @@ Node *declaration() {
 
   Token *ident = expect_ident();
   if (find_var(get_local_varlist(), ident) != NULL) {
-    error_at(ident->str, "すでに定義されています");
+    error_at(ident->begin, "すでに定義されています");
   }
 
   if (confirm_reserved("[")) {
@@ -233,7 +233,7 @@ Var *function_param() {
 
   Token *ident = expect_ident();
   if (find_var(get_local_varlist(), ident) != NULL) {
-    error_at(ident->str, "すでに定義されています");
+    error_at(ident->begin, "すでに定義されています");
   }
 
   Var *v = add_local_var(ident, t);
@@ -522,7 +522,7 @@ Node *primary() {
   if (ident) {
     if (confirm_reserved("(")) {
       Node *node = new_node(ND_FUNC_CALL);
-      node->funcName = copy_string(ident->str, ident->len);
+      node->funcName = copy_string(ident->begin, ident->len);
       node->args = function_arg_list();
       return node;
     }
@@ -531,7 +531,7 @@ Node *primary() {
     if (v == NULL) {
       v = find_var(get_global_varlist(), ident);
       if (v == NULL) {
-        error_at(ident->str, "定義されていない変数を使用しました");
+        error_at(ident->begin, "定義されていない変数を使用しました");
       }
     }
 

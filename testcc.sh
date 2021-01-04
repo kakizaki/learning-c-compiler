@@ -3,8 +3,6 @@ cat <<EOF | gcc -xc -c -o tmp2.o -
 #include <stdio.h>
 #include <stdlib.h>
 
-void println(char *s) { printf("%s\n", s); }
-
 void errorMessage(int e, int a) { 
   printf("%d expected, but got %d\n", e, a);
   exit(1);
