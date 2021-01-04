@@ -60,7 +60,7 @@ static void gen(Node *node) {
 
   // 文字列
   case ND_STR:
-    printf("  push offset .LC%d\n", node->string->id);
+    printf("  push offset .L.str%d\n", node->string->id);
     return;
 
   // 変数の値を参照
@@ -118,9 +118,9 @@ static void gen(Node *node) {
     gen(node->cond);
     printf("  pop rax\n");
     printf("  cmp rax, 0\n");
-    printf("  je  .Lend%d\n", labelID);
+    printf("  je  .L.end%d\n", labelID);
     gen(node->trueStatement);
-    printf(".Lend%d:\n", labelID);
+    printf(".L.end%d:\n", labelID);
     return;
 
   case ND_IF_ELSE:
@@ -128,24 +128,24 @@ static void gen(Node *node) {
     gen(node->cond);
     printf("  pop rax\n");
     printf("  cmp rax, 0\n");
-    printf("  je  .Lelse%d\n", labelID);
+    printf("  je  .L.else%d\n", labelID);
     gen(node->trueStatement);
-    printf("  jmp .Lend%d\n",labelID);
-    printf(".Lelse%d:\n", labelID);
+    printf("  jmp .L.end%d\n",labelID);
+    printf(".L.else%d:\n", labelID);
     gen(node->falseStatement);
-    printf(".Lend%d:\n", labelID);
+    printf(".L.end%d:\n", labelID);
     return;
 
   case ND_WHILE:
     labelID = publishLabelID();
-    printf(".Lbegin%d:\n", labelID);
+    printf(".L.begin%d:\n", labelID);
     gen(node->cond);
     printf("  pop rax\n");
     printf("  cmp rax, 0\n");
-    printf("  je .Lend%d\n", labelID);
+    printf("  je .L.end%d\n", labelID);
     gen(node->trueStatement);
-    printf("  jmp .Lbegin%d\n", labelID);
-    printf(".Lend%d:\n", labelID);
+    printf("  jmp .L.begin%d\n", labelID);
+    printf(".L.end%d:\n", labelID);
     return;
 
   case ND_FOR:
@@ -153,19 +153,19 @@ static void gen(Node *node) {
     if (node->init != NULL) {
       gen(node->init);
     }
-    printf(".Lbegin%d:\n", labelID);
+    printf(".L.begin%d:\n", labelID);
     if (node->cond != NULL) {
       gen(node->cond);
       printf("  pop rax\n");
       printf("  cmp rax, 0\n");
-      printf("  je .Lend%d\n", labelID);
+      printf("  je .L.end%d\n", labelID);
     }
     gen(node->trueStatement);
     if (node->loop != NULL) {
       gen(node->loop);
     }
-    printf("  jmp .Lbegin%d\n", labelID);
-    printf(".Lend%d:\n", labelID);
+    printf("  jmp .L.begin%d\n", labelID);
+    printf(".L.end%d:\n", labelID);
     return;
 
   case ND_BLOCK:
@@ -288,7 +288,7 @@ void codegen(Program *program) {
   }
 
   for (StringList *s = program->string_list; s; s = s->next) {
-    printf(".LC%d:\n", s->s->id);
+    printf(".L.str%d:\n", s->s->id);
     for (int i = 0; i < s->s->length; i++) {
       printf("  .byte %d\n", s->s->p[i]);
     }
