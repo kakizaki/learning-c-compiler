@@ -134,14 +134,20 @@ static int getIdentWord(char *p) {
 static int getStringLength(char *p) {
   int len = 0;
 
-  if (*p == '"') {
-    p++;
-    while (*p != '"') {
-      len++;
-      p++;
-    }
+  if (*p != '"') {
+    return -1;
   }
-  return len;
+
+  p++;
+  while (*p) {
+    if (*p == '"') {
+      return len;
+    }
+    len++;
+    p++;
+  }
+
+  return -1;
 }
 
 
@@ -388,7 +394,7 @@ Token *tokenize(char *p) {
     }
 
     length = getStringLength(p);
-    if (0 < length) {
+    if (0 <= length) {
       cur = new_token(TK_STR, cur, p + 1, length);
       p += length + 2;
       continue;
