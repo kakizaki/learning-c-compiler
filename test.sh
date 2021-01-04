@@ -293,5 +293,6 @@ try 99 'int main() { return "abc"[2]; }'
 try 0 'int main() { return "abc"[3]; }'
 try 4 'int main() { return sizeof("abc"); }'
 
+try 97 'int main() { return a(); } int a() { return "abc"[0]; }'
 
 echo OK

@@ -10,6 +10,10 @@ $(OBJS): 9cc.h
 test: 9cc
 		./test.sh
 
+testcc: 9cc
+		./testcc.sh
+
+
 clean:
 	rm -f 9cc *.o *~ tmp*
 

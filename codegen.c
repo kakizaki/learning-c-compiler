@@ -49,6 +49,7 @@ static char *argreg_8[] = { "rdi", "rsi", "rdx", "rcx", "r8", "r9" };
 
 static void gen(Node *node) {
   int labelID;
+  
 
   switch (node->kind) {
 
@@ -90,13 +91,10 @@ static void gen(Node *node) {
     } else {
       push_val_address(node->lhs);
     }
-    printf("#  aaaa\n");
 
     // 右辺の値を push
     gen(node->rhs);
     
-    printf("#  bbbb\n");
-
     // 右辺の値を取り出し、変数のアドレスを取り出し、変数のアドレスへ右辺の値をセット
     printf("  pop rdi\n");
     printf("  pop rax\n");
