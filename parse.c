@@ -150,7 +150,7 @@ Type *declaration_array(Type *t) {
 
 
 Var *global_variable(Type *t, Token *ident) {
-  Var *v = find_var(get_global_varlist(), ident);
+  Var *v = find_var_in_global(ident);
   if (v != NULL) {
     error_at(ident->begin, "すでに定義されています");
   }
@@ -175,6 +175,7 @@ Function* function() {
 
 Function* function2(Type *return_type, Token *ident) {
   clear_local_varlist();
+  begin_scope();
 
   Function *func = calloc(1, sizeof(Function));
   func->return_type = return_type;
@@ -191,6 +192,7 @@ Function* function2(Type *return_type, Token *ident) {
     cur->node = statement();
   }
 
+  end_scope();
   func->block = head.next;
   func->locals = get_local_varlist();
   func->stackSize = update_offset_local_varlist();
@@ -205,7 +207,7 @@ Node *declaration() {
   Type *t = declaration_type();
 
   Token *ident = expect_ident();
-  if (find_var(get_local_varlist(), ident) != NULL) {
+  if (find_var_in_current_scope(ident) != NULL) {
     error_at(ident->begin, "すでに定義されています");
   }
 
@@ -232,7 +234,7 @@ Var *function_param() {
   Type *t = declaration_type();
 
   Token *ident = expect_ident();
-  if (find_var(get_local_varlist(), ident) != NULL) {
+  if (find_var_in_current_scope(ident) != NULL) {
     error_at(ident->begin, "すでに定義されています");
   }
 
@@ -279,11 +281,13 @@ Node *statement() {
     NodeList head = { 0, 0 };
     NodeList* cur = &head;
 
+    begin_scope();
     while (consume_reserved("}") == false) {
       cur->next = calloc(1, sizeof(NodeList));
       cur = cur->next;
       cur->node = statement();
     }
+    end_scope();
 
     node = new_node(ND_BLOCK);
     node->block = head.next;
@@ -527,12 +531,9 @@ Node *primary() {
       return node;
     }
     
-    Var *v = find_var(get_local_varlist(), ident);
+    Var *v = find_var_in_scopes(ident);
     if (v == NULL) {
-      v = find_var(get_global_varlist(), ident);
-      if (v == NULL) {
-        error_at(ident->begin, "定義されていない変数を使用しました");
-      }
+      error_at(ident->begin, "定義されていない変数を使用しました");
     }
 
     if (v->type->kind == TY_ARRAY || v->type->kind == TY_PTR) {

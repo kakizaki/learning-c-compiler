@@ -2,7 +2,8 @@
 
 
 
-Var *find_var(VarList *list, Token *tok) {
+
+static Var *find_var(VarList *list, Token *tok) {
   for (VarList *v = list; v; v = v->next) {
     if (v->var->len == tok->len && !memcmp(tok->begin, v->var->name, v->var->len)) {
       return v->var;
@@ -23,7 +24,75 @@ static Var *new_var(Token *t, Type *type, bool is_local) {
 }
 
 
+// スコープ
+typedef struct Scope Scope;
 
+struct Scope {
+  Scope *parent;
+
+  VarList *var;
+};
+
+static Scope global_scope;
+static Scope *local_scope;
+
+static void add_to_scope(Var *v) {
+  VarList *vl = calloc(1, sizeof(VarList));
+  vl->var = v;
+
+  Scope *s = NULL;
+  if (v->is_local) {
+    s = local_scope;
+  } else {
+    s = &global_scope;
+  }
+
+  if (s->var == NULL) {
+    s->var = vl;
+  } else {
+    vl->next = s->var;
+    s->var = vl;
+  }
+}
+
+void begin_scope() {
+  Scope *p = local_scope;
+  local_scope = calloc(1, sizeof(Scope));
+  local_scope->parent = p;
+}
+
+void end_scope() {
+  if (local_scope != NULL) {
+    local_scope = local_scope->parent;
+  }
+}
+
+
+Var *find_var_in_global(Token *tok) {
+  return find_var(global_scope.var, tok);
+}
+
+
+Var *find_var_in_scopes(Token *tok) {
+  for (Scope *n = local_scope; n != NULL; n = n->parent) {
+    Var *v = find_var(n->var, tok);
+    if (v != NULL) {
+      return v;
+    }
+  }
+  return find_var_in_global(tok);
+}
+
+
+Var *find_var_in_current_scope(Token *tok) {
+  if (local_scope != NULL) {
+    return find_var(local_scope->var, tok);
+  }
+  return NULL;
+}
+
+
+// local variable
 static VarList local_vars;
 static VarList *current_local_var;
 static int sum_local_size;
@@ -45,6 +114,8 @@ Var *add_local_var(Token *t, Type *type) {
   v->var = new_var(t, type, true);
   current_local_var->next = v;
   current_local_var = v;
+
+  add_to_scope(v->var);
   return v->var;
 }
 
@@ -90,6 +161,8 @@ Var *add_global_var(Token *t, Type *type) {
   v->var = new_var(t, type, false);
   current_global_var->next = v;
   current_global_var = v;
+
+  add_to_scope(v->var);
   return v->var;
 }
 

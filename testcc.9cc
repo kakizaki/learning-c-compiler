@@ -192,6 +192,12 @@ int main() {
     assert(106, test_escape_char10());
     assert(107, test_escape_char11());
     assert(108, test_escape_char12());
+    
+    
+    clear(); printf("# scope\n");
+    assert(1, test_scope_01());
+    assert(3, test_scope_02());
+    assert(1, test_scope_03());
 
     return 0;
 }
@@ -403,6 +409,10 @@ int test_escape_char12() { return "\l"[0]; }
 //char* test_escape_char13() { return "\naaaa\nbbbb\ncccc\n"; }
 
 
+//
+int test_scope_01() { int a = 1; { int a = 3; } return a; }
+int test_scope_02() { int a = 1; { a = 3; } return a; }
+int test_scope_03() { int a = 1; { int a = 3; } { int b = 4; return a; } }
 
 
 /*

@@ -126,7 +126,12 @@ struct VarList {
   VarList *next;
 };
 
-Var *find_var(VarList *l, Token *tok);
+
+void begin_scope();
+void end_scope();
+Var *find_var_in_global(Token *tok);
+Var *find_var_in_scopes(Token *tok);
+Var *find_var_in_current_scope(Token *tok);
 
 void clear_local_varlist();
 VarList *get_local_varlist();

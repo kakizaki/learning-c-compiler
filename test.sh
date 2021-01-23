@@ -313,5 +313,12 @@ try 108 'int main() { return "\l"[0]; }'
 try 97 'int main() { return "\aa"[1]; }'
 
 
+#
+echo '### scope'
+try 1 'int main() { int a = 1; { int a = 3; } return a; }'
+try 3 'int main() { int a = 1; { a = 3; } return a; }'
+try 1 'int main() { int a = 1; { int a = 3; } { int b = 4; return a; } }'
+try 1 'int a; int main() { a = 2; int a = 1; return a; }'
+
 
 echo OK
